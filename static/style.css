@@ -1,0 +1,6 @@
+body { background: #f5f7fb; color: #172033; }
+.hero { background: linear-gradient(125deg, #152b50, #2762a3); color: white; }
+.card { border: 1px solid #e4e9f1; border-radius: 16px; box-shadow: 0 6px 22px rgba(20,35,60,.04); }
+.icon { font-size: 2rem; color: #2866a8; margin-bottom: .6rem; }
+.result { white-space: pre-wrap; overflow-wrap: anywhere; background: #101827; color: #dce7f5; padding: 1rem; border-radius: 10px; }
+.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
