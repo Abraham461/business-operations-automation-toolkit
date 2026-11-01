@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}AI Document Processing{% endblock %}
+{% block content %}
+<h1 class="h2 mb-2">AI document processing</h1>
+<p class="text-secondary">Upload a plain-text sample document for summarization. Live OpenRouter processing is optional.</p>
+<div class="card mb-3"><div class="card-body">
+  <form method="post" action="/ai/process" enctype="multipart/form-data">
+    <input class="form-control mb-3" type="file" name="file" accept=".txt" required>
+    <button class="btn btn-primary">Process document</button>
+  </form>
+  <a href="/static/sample_document.txt" download class="d-inline-block mt-3">Download sample document</a>
+</div></div>
+{% if result %}
+<div class="card"><div class="card-body">
+  <span class="badge text-bg-secondary">{{ result.mode }} mode</span>
+  <h2 class="h5 mt-3">Summary / output</h2>
+  <pre class="result">{{ result.summary }}</pre>
+  {% if result.key_details %}<h3 class="h6">Key details</h3><ul>{% for item in result.key_details %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+</div></div>
+{% endif %}
+{% endblock %}
