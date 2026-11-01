@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Operations Toolkit{% endblock %}
+{% block content %}
+<section class="hero p-4 p-md-5 rounded-4 mb-4">
+  <span class="badge text-bg-light mb-3">BUSINESS OPERATIONS AUTOMATION</span>
+  <h1 class="display-5 fw-bold">Less manual work.<br>More reliable operations.</h1>
+  <p class="lead col-lg-8">A practical toolkit for document generation, AI-assisted text processing and API checks.</p>
+  <p class="small opacity-75">Built with Python, Flask, ReportLab and Requests.</p>
+</section>
+<div class="row g-3">
+  <div class="col-md-4"><div class="card h-100"><div class="card-body">
+    <div class="icon">▤</div><h2 class="h5">Document automation</h2>
+    <p class="text-secondary">Turn a CSV customer list into individual PDF summaries.</p>
+    <a class="btn btn-outline-primary" href="/documents">Open module</a>
+  </div></div></div>
+  <div class="col-md-4"><div class="card h-100"><div class="card-body">
+    <div class="icon">✦</div><h2 class="h5">AI processing</h2>
+    <p class="text-secondary">Summarize a text document and extract useful details.</p>
+    <a class="btn btn-outline-primary" href="/ai">Open module</a>
+  </div></div></div>
+  <div class="col-md-4"><div class="card h-100"><div class="card-body">
+    <div class="icon">⌁</div><h2 class="h5">API testing</h2>
+    <p class="text-secondary">Send a request and check its HTTP status code.</p>
+    <a class="btn btn-outline-primary" href="/api-testing">Open module</a>
+  </div></div></div>
+</div>
+{% endblock %}
