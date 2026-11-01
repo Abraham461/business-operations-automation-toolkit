@@ -1,0 +1,4 @@
+customer_name,customer_id,email,plan
+Alex Morgan,CUST-1001,alex@example.com,Standard
+Jamie Lee,CUST-1002,jamie@example.com,Premium
+Taylor Smith,CUST-1003,taylor@example.com,Basic
