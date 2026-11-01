@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}API Testing{% endblock %}
+{% block content %}
+<h1 class="h2 mb-2">API testing</h1>
+<p class="text-secondary">Send a request to an API you own or are authorized to test. Do not submit credentials or confidential endpoints.</p>
+<div class="card mb-3"><div class="card-body">
+  <form method="post" action="/api-testing/run">
+    <label class="form-label">Endpoint URL</label>
+    <input class="form-control mb-3" name="url" type="url" placeholder="https://jsonplaceholder.typicode.com/posts/1" value="{{ previous.url if previous else '' }}" required>
+    <div class="row">
+      <div class="col-md-6"><label class="form-label">Method</label>
+        <select class="form-select mb-3" name="method">
+          {% for method in ['GET','POST','PUT','PATCH','DELETE'] %}
+          <option {% if previous and previous.method == method %}selected{% endif %}>{{ method }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6"><label class="form-label">Expected status code</label>
+        <input class="form-control mb-3" name="expected_status" type="number" value="{{ previous.expected_status if previous else '200' }}">
+      </div>
+    </div>
+    <label class="form-label">JSON request body (optional)</label>
+    <textarea class="form-control mb-3 code" name="body" rows="5" placeholder='{"title":"demo","body":"hello","userId":1}'>{{ previous.body if previous else '' }}</textarea>
+    <button class="btn btn-primary">Run API test</button>
+  </form>
+</div></div>
+{% if result %}
+<div class="card"><div class="card-body">
+  <h2 class="h5">Test result
+    <span class="badge {{ 'text-bg-success' if result.success else 'text-bg-danger' }}">{{ 'PASS' if result.success else 'FAIL' }}</span>
+  </h2>
+  {% if result.error %}<div class="alert alert-danger">{{ result.error }}</div>
+  {% else %}
+  <p class="mb-1">HTTP status: <strong>{{ result.status_code }}</strong> (expected {{ result.expected_status }})</p>
+  <p class="mb-2">Response time: {{ result.elapsed_ms }} ms</p>
+  <pre class="result">{{ result.response_body | tojson(indent=2) }}</pre>
+  {% endif %}
+</div></div>
+{% endif %}
+{% endblock %}
