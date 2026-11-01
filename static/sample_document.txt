@@ -1,0 +1,7 @@
+DEMO SERVICE AGREEMENT
+Customer: Example Trading Co.
+Service: Monthly inventory reporting automation
+Start date: 1 November 2026
+Scope: Consolidate weekly CSV files, validate required fields, generate a monthly summary report and email the report to the operations manager.
+Exclusions: The system does not make payment decisions or modify source accounting records.
+Review: The client will review the first generated report before production use.
