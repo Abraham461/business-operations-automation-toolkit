@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Document Automation{% endblock %}
+{% block content %}
+<h1 class="h2 mb-2">Document automation</h1>
+<p class="text-secondary">Upload a CSV and generate an individual PDF customer summary for each valid row.</p>
+<div class="card"><div class="card-body">
+  <h2 class="h5">Upload customer CSV</h2>
+  <p class="small text-secondary">Required columns: customer_name, customer_id, email, plan</p>
+  <form method="post" action="/documents/generate" enctype="multipart/form-data">
+    <input class="form-control mb-3" type="file" name="file" accept=".csv" required>
+    <button class="btn btn-primary">Generate PDF documents</button>
+  </form>
+  <a href="/static/sample_customers.csv" download class="d-inline-block mt-3">Download sample CSV</a>
+</div></div>
+{% endblock %}
