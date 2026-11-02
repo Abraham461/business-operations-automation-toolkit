@@ -151,7 +151,7 @@
         node.classList.add("workflow-node-mapping");
         node.append(makeMappingEditor(nodeData, index));
       }
-      if (type === "conditional_branch" || type === "map_fields") {
+      if (type === "conditional_branch") {
         node.classList.add("workflow-node-conditional");
         node.append(makeConditionEditor(nodeData, index));
       }
@@ -312,12 +312,14 @@
       const type = button.dataset.addNode;
       if (nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
       const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
+      const mappingIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
       const newNode = type === "conditional_branch"
         ? { type, field: "plan", operator: "equals", value: "VIP" }
         : type === "map_fields"
           ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
           : type;
-      nodes.splice(reportIndex < 0 ? nodes.length : reportIndex, 0, newNode);
+      const insertAt = type === "map_fields" && mappingIndex >= 0 ? mappingIndex : reportIndex < 0 ? nodes.length : reportIndex;
+      nodes.splice(insertAt, 0, newNode);
       markDirty();
       result.textContent = "";
       render();
