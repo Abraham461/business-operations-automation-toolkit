@@ -8,8 +8,15 @@
   };
   const defaults = ["manual_trigger", "read_csv", "validate_rows", "generate_pdfs", "execution_report"];
   let nodes = defaults.slice();
+  let currentWorkflowId = null;
+  let currentVersionId = null;
   const list = document.getElementById("workflow-nodes");
   const result = document.getElementById("workflow-result");
+  const libraryStatus = document.getElementById("workflow-library-status");
+  const savedSelect = document.getElementById("saved-workflows");
+  const history = document.getElementById("workflow-history");
+
+  const markDirty = () => { currentVersionId = null; };
   const render = () => {
     list.replaceChildren();
     nodes.forEach((type, index) => {
@@ -37,7 +44,7 @@
         remove.className = "node-remove";
         remove.textContent = "Remove";
         remove.setAttribute("aria-label", "Remove " + info[0]);
-        remove.addEventListener("click", () => { nodes.splice(index, 1); render(); });
+        remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
       row.append(node);
@@ -50,21 +57,131 @@
       list.append(row);
     });
   };
+
+  const refreshLibrary = async (selectedId = currentWorkflowId) => {
+    try {
+      const response = await fetch("/api/workflows");
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not load saved workflows.");
+      savedSelect.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select a saved workflow";
+      savedSelect.append(placeholder);
+      (payload.workflows || []).forEach(workflow => {
+        const option = document.createElement("option");
+        option.value = workflow.id;
+        option.textContent = workflow.name + " · v" + workflow.latest_version;
+        savedSelect.append(option);
+      });
+      savedSelect.value = selectedId || "";
+    } catch (error) {
+      libraryStatus.textContent = error.message;
+    }
+  };
+
+  const refreshHistory = async () => {
+    if (!currentWorkflowId) {
+      history.textContent = "Save or load a workflow to view its execution history.";
+      return;
+    }
+    try {
+      const response = await fetch("/api/workflows/" + encodeURIComponent(currentWorkflowId) + "/executions");
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not load execution history.");
+      history.replaceChildren();
+      if (!payload.executions.length) {
+        history.textContent = "No executions recorded for this workflow yet.";
+        return;
+      }
+      payload.executions.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "d-flex flex-wrap justify-content-between gap-2 border-bottom py-2";
+        const description = document.createElement("span");
+        description.textContent = (item.started_at || item.created_at || "Unknown time") + " · " + (item.summary || "Execution");
+        const status = document.createElement("strong");
+        status.textContent = item.status.toUpperCase();
+        status.className = item.status === "success" ? "text-success" : "text-danger";
+        row.append(description, status);
+        history.append(row);
+      });
+    } catch (error) {
+      history.textContent = error.message;
+    }
+  };
+
+  const saveWorkflow = async () => {
+    const button = document.getElementById("save-workflow");
+    button.disabled = true;
+    libraryStatus.textContent = "Saving workflow…";
+    try {
+      const response = await fetch("/api/workflows", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: currentWorkflowId,
+          name: document.getElementById("workflow-name").value,
+          nodes
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not save workflow.");
+      const workflow = payload.workflow;
+      currentWorkflowId = workflow.id;
+      currentVersionId = workflow.latest_version ? workflow.latest_version.id : null;
+      libraryStatus.textContent = "Saved as version " + workflow.latest_version.version_number + ".";
+      await refreshLibrary(currentWorkflowId);
+      await refreshHistory();
+    } catch (error) {
+      libraryStatus.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  const loadWorkflow = async () => {
+    const id = savedSelect.value;
+    if (!id) return;
+    libraryStatus.textContent = "Loading workflow…";
+    try {
+      const response = await fetch("/api/workflows/" + encodeURIComponent(id));
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not load workflow.");
+      const workflow = payload.workflow;
+      if (!workflow.latest_version) throw new Error("This workflow has no saved version.");
+      currentWorkflowId = workflow.id;
+      currentVersionId = workflow.latest_version.id;
+      nodes = workflow.latest_version.definition;
+      document.getElementById("workflow-name").value = workflow.name;
+      render();
+      libraryStatus.textContent = "Loaded version " + workflow.latest_version.version_number + ".";
+      await refreshHistory();
+    } catch (error) {
+      libraryStatus.textContent = error.message;
+    }
+  };
+
   document.querySelectorAll("[data-add-node]").forEach(button => {
     button.addEventListener("click", () => {
       const type = button.dataset.addNode;
       if (nodes.includes(type)) { result.textContent = "This action is already in the workflow."; return; }
       const reportIndex = nodes.indexOf("execution_report");
       nodes.splice(reportIndex < 0 ? nodes.length : reportIndex, 0, type);
+      markDirty();
       result.textContent = "";
       render();
     });
   });
+
   document.getElementById("reset-workflow").addEventListener("click", () => {
     nodes = defaults.slice();
+    markDirty();
     result.textContent = "";
     render();
   });
+  document.getElementById("save-workflow").addEventListener("click", saveWorkflow);
+  savedSelect.addEventListener("change", loadWorkflow);
+
   document.getElementById("run-workflow").addEventListener("click", async () => {
     const file = document.getElementById("workflow-file").files[0];
     if (!file) { result.textContent = "Choose a CSV file before running the workflow."; return; }
@@ -74,6 +191,8 @@
     const data = new FormData();
     data.append("file", file);
     data.append("workflow", JSON.stringify(nodes));
+    if (currentWorkflowId) data.append("workflow_id", currentWorkflowId);
+    if (currentVersionId) data.append("version_id", currentVersionId);
     try {
       const response = await fetch("/workflows/run", { method: "POST", body: data });
       const payload = await response.json();
@@ -97,6 +216,13 @@
         link.className = "text-link";
         result.append(link);
       }
+      if (payload.execution_id) {
+        const saved = document.createElement("p");
+        saved.className = "small text-muted";
+        saved.textContent = "Execution saved to history.";
+        result.append(saved);
+        await refreshHistory();
+      }
       if (!response.ok && payload.error) result.setAttribute("data-error", "true");
     } catch (_error) {
       result.textContent = "The workflow request failed. Check the application and try again.";
@@ -104,5 +230,7 @@
       button.disabled = false;
     }
   });
+
   render();
+  refreshLibrary();
 })();

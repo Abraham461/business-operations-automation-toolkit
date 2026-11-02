@@ -11,12 +11,22 @@
     <div class="action-option"><span class="workflow-node-icon validate-node"><i class="bi bi-check2-square"></i></span><div><strong>Validate rows</strong><small>Check required fields</small></div><button type="button" data-add-node="validate_rows">+</button></div>
     <div class="action-option"><span class="workflow-node-icon document-node"><i class="bi bi-file-earmark-pdf"></i></span><div><strong>Generate PDFs</strong><small>Create customer documents</small></div><button type="button" data-add-node="generate_pdfs">+</button></div>
     <div class="action-option"><span class="workflow-node-icon report-node"><i class="bi bi-clipboard-data"></i></span><div><strong>Execution report</strong><small>Summarize the run</small></div><button type="button" disabled>+</button></div>
-    <p class="workflow-hint"><i class="bi bi-info-circle"></i> This first release runs a controlled sequential workflow. Branching and more actions come later.</p>
+    <p class="workflow-hint"><i class="bi bi-info-circle"></i> This release runs controlled sequential workflows. Branching and more actions come later.</p>
   </aside>
   <section class="surface-card workflow-canvas">
     <div class="workflow-canvas-head"><div><span class="card-kicker">WORKFLOW CANVAS</span><h2>Customer document pipeline</h2><p>Actions execute in the order shown.</p></div><button type="button" class="btn btn-light btn-sm" id="reset-workflow"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</button></div>
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col-md-5"><label for="workflow-name" class="form-label">Workflow name</label><input id="workflow-name" class="form-control" maxlength="100" value="Customer document pipeline"></div>
+      <div class="col-md-3"><button type="button" id="save-workflow" class="btn btn-outline-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i> Save workflow</button></div>
+      <div class="col-md-4"><label for="saved-workflows" class="form-label">Saved workflows</label><select id="saved-workflows" class="form-select"><option value="">Select a saved workflow</option></select></div>
+      <div class="col-12"><div id="workflow-library-status" class="small text-muted" role="status" aria-live="polite"></div></div>
+    </div>
     <div id="workflow-nodes" class="workflow-nodes" aria-live="polite"></div>
     <div class="workflow-run-panel"><label for="workflow-file" class="form-label">Input CSV file</label><input id="workflow-file" class="form-control" type="file" accept=".csv" required><div class="workflow-run-actions"><span><i class="bi bi-shield-check"></i> Fictional sample data only</span><button type="button" id="run-workflow" class="btn btn-primary app-primary-btn"><i class="bi bi-play-fill me-1"></i> Run workflow</button></div><div id="workflow-result" class="workflow-result" role="status" aria-live="polite"></div></div>
+    <div class="mt-4">
+      <div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">Recent executions</h3><span class="small text-muted">Latest 20 runs for the selected workflow</span></div>
+      <div id="workflow-history" class="small text-muted">Save or load a workflow to view its execution history.</div>
+    </div>
   </section>
 </div>
 <script src="{{ url_for('static', filename='workflow.js') }}"></script>

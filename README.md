@@ -2,13 +2,13 @@
 
 A local-first Python/Flask portfolio project demonstrating practical automation and QA utilities in one lightweight web application.
 
-> **Project status:** early MVP. The document-generation module has been exercised with fictional sample data. The full Flask application and all three workflows still require end-to-end testing on Windows. This repository does not claim production readiness.
+> **Project status:** early MVP. The document-generation module has been exercised with fictional sample data. The full Flask application and all workflows still require end-to-end testing on Windows. This repository does not claim production readiness.
 
 ## What it demonstrates
 
 | Workspace | What it does | Current MVP scope |
 |---|---|---|
-| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → row validation → PDF generation → execution report |
+| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → row validation → PDF generation → execution report; saveable definitions, versions and execution history |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
 | **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
@@ -17,6 +17,7 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 
 - Python 3.10+
 - Flask and Jinja templates
+- SQLite (built into Python) for local workflow persistence
 - Requests
 - ReportLab
 - python-dotenv
@@ -47,9 +48,20 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-## Workflow Builder (first release)
+## Workflow Builder
 
-Open **Workflow Builder** to assemble the customer-document pipeline. Actions execute sequentially and the runner validates the workflow structure before processing the uploaded CSV. The first release supports a manual trigger, CSV reading, required-column/row validation, PDF generation and an execution summary. It is an early foundation: workflows are not yet saved to a database, and branching, scheduling, retries and background execution are not implemented.
+Open **Workflow Builder** to assemble the customer-document pipeline. Actions execute sequentially and the runner validates the workflow structure before processing the uploaded CSV.
+
+You can now:
+- Save a workflow with a name.
+- Load saved workflows from the local SQLite database.
+- Create a new version when a saved workflow's action sequence changes.
+- Review recent execution history for each saved workflow.
+- Run either a saved version or an unsaved draft.
+
+The database is created automatically at `instance/opspilot.sqlite3` on first launch. Set `OPSPILOT_DATABASE` in `.env` to use another local database path. Existing workflow files are not migrated because the earlier MVP did not persist them.
+
+Branching, scheduling, retries, background execution, credentials and multi-user access are not implemented yet.
 
 ## Try the sample workflows
 
@@ -94,7 +106,7 @@ After installing dependencies:
 python -m unittest discover -s tests -v
 ```
 
-These tests cover document generation, basic API runner behavior and AI demo mode. They do **not** replace a full browser-based test of the Flask application.
+These tests cover document generation, basic API runner behavior, AI demo mode and workflow persistence. They do **not** replace a full browser-based test of the Flask application.
 
 ## Project structure
 
@@ -104,13 +116,15 @@ These tests cover document generation, basic API runner behavior and AI demo mod
 ├── modules/
 │   ├── ai_processing/
 │   ├── api_testing/
-│   └── document_automation/
+│   ├── document_automation/
+│   └── workflow_engine/
 ├── templates/
 ├── static/
 ├── tests/
 ├── docs/
 ├── uploads/
 ├── generated_files/
+├── instance/                 # local SQLite database; ignored by Git
 ├── .env.example
 ├── .gitignore
 └── requirements.txt
@@ -119,14 +133,15 @@ These tests cover document generation, basic API runner behavior and AI demo mod
 ## Security and responsible use
 
 - Fictional sample data only. Never use customer, policyholder, banking or employer-confidential information.
-- `.env`, virtual environments, uploaded files and generated outputs are excluded from Git by `.gitignore`.
+- `.env`, virtual environments, the SQLite database, uploaded files and generated outputs are excluded from Git.
 - Keep the Flask app bound to localhost for this MVP.
 - Do not test third-party APIs without authorization.
 - AI-generated summaries may be incomplete or inaccurate. Review all output before relying on it.
+- The workflow database has no user authentication or per-user authorization. It is intended for a single local operator only.
 
 ## Roadmap
 
-1. Persist workflow definitions, versions and execution history.
+1. **Completed:** persist workflow definitions, versions and execution history locally.
 2. Add branching, reusable node configuration and workflow validation feedback.
 3. Expand the action catalogue with field mapping, filters, HTTP requests and AI tasks.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
