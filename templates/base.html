@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f8fc">
+  <meta name="description" content="OpsPilot business operations automation toolkit">
   <title>{% block title %}OpsPilot{% endblock %} · OpsPilot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,34 +14,35 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
   <aside class="sidebar">
-    <a class="brand" href="/">
-      <span class="brand-mark"><i class="bi bi-layers-half"></i></span>
+    <a class="brand" href="/" aria-label="OpsPilot home">
+      <span class="brand-mark"><i class="bi bi-layers-half" aria-hidden="true"></i></span>
       <span><strong>OpsPilot</strong><small>OPERATIONS SUITE</small></span>
     </a>
     <div class="sidebar-label">WORKSPACE</div>
-    <nav class="side-nav">
-      <a class="side-link {{ 'active' if request.endpoint == 'index' else '' }}" href="/"><i class="bi bi-grid-1x2"></i><span>Overview</span></a>
-      <a class="side-link {{ 'active' if request.endpoint in ['documents','documents_generate'] else '' }}" href="/documents"><i class="bi bi-file-earmark-pdf"></i><span>Document automation</span></a>
-      <a class="side-link {{ 'active' if request.endpoint in ['ai','ai_process'] else '' }}" href="/ai"><i class="bi bi-stars"></i><span>AI processing</span><span class="nav-tag">AI</span></a>
-      <a class="side-link {{ 'active' if request.endpoint in ['api_testing','api_testing_run'] else '' }}" href="/api-testing"><i class="bi bi-braces"></i><span>API testing</span></a>
+    <nav class="side-nav" aria-label="Main navigation">
+      <a class="side-link {{ 'active' if request.endpoint == 'index' else '' }}" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}><i class="bi bi-grid-1x2" aria-hidden="true"></i><span>Overview</span></a>
+      <a class="side-link {{ 'active' if request.endpoint in ['documents','documents_generate'] else '' }}" href="/documents" {% if request.endpoint in ['documents','documents_generate'] %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span>Document automation</span></a>
+      <a class="side-link {{ 'active' if request.endpoint in ['ai','ai_process'] else '' }}" href="/ai" {% if request.endpoint in ['ai','ai_process'] %}aria-current="page"{% endif %}><i class="bi bi-stars" aria-hidden="true"></i><span>AI processing</span><span class="nav-tag">AI</span></a>
+      <a class="side-link {{ 'active' if request.endpoint in ['api_testing','api_testing_run'] else '' }}" href="/api-testing" {% if request.endpoint in ['api_testing','api_testing_run'] %}aria-current="page"{% endif %}><i class="bi bi-braces" aria-hidden="true"></i><span>API testing</span></a>
     </nav>
     <div class="sidebar-bottom">
-      <div class="sidebar-note"><i class="bi bi-shield-check"></i><div><strong>Demo workspace</strong><small>Use fictional data only.</small></div></div>
+      <div class="sidebar-note"><i class="bi bi-shield-check" aria-hidden="true"></i><div><strong>Demo workspace</strong><small>Use fictional data only.</small></div></div>
       <div class="sidebar-version">OPS PILOT <span>·</span> PORTFOLIO BUILD</div>
     </div>
   </aside>
-  <main class="main-area">
+  <main class="main-area" id="main-content">
     <header class="topbar">
-      <div class="topbar-context"><span class="topbar-dot"></span> Local workspace <span class="topbar-divider">/</span> <span>{% block breadcrumb %}Overview{% endblock %}</span></div>
-      <div class="topbar-right"><span class="status-pill"><span></span> System ready</span><div class="avatar">OP</div></div>
+      <div class="topbar-context"><span class="topbar-dot" aria-hidden="true"></span><span class="workspace-label">Local workspace</span><span class="topbar-divider">/</span><span>{% block breadcrumb %}Overview{% endblock %}</span></div>
+      <div class="topbar-right"><span class="status-pill"><span aria-hidden="true"></span> System ready</span><div class="avatar" aria-label="OpsPilot workspace">OP</div></div>
     </header>
     <div class="page-content">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
           <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }} alert-dismissible fade show app-alert" role="alert">
-            <i class="bi {{ 'bi-check-circle-fill' if category == 'success' else 'bi-exclamation-triangle-fill' }} me-2"></i>{{ message }}
+            <i class="bi {{ 'bi-check-circle-fill' if category == 'success' else 'bi-exclamation-triangle-fill' }} me-2" aria-hidden="true"></i>{{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
         {% endfor %}
