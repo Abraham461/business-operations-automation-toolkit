@@ -2,6 +2,7 @@
   const labels = {
     manual_trigger: ["Manual trigger", "Start the workflow", "bi-play-circle", "trigger-node"],
     read_csv: ["Read CSV", "Load uploaded records", "bi-filetype-csv", "data-node"],
+    map_fields: ["Map fields", "Match source columns to customer fields", "bi-arrow-left-right", "map-node"],
     validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
@@ -46,6 +47,41 @@
       versionSelect.replaceChildren(draft);
       versionSelect.disabled = true;
     }
+  };
+
+  const makeMappingEditor = (node, index) => {
+    const config = configOf(node);
+    const mapping = config.mapping || {};
+    const editor = document.createElement("div");
+    editor.className = "mapping-editor";
+    const fields = [
+      ["customer_name", "Customer name"],
+      ["customer_id", "Customer ID"],
+      ["email", "Email"],
+      ["plan", "Plan"]
+    ];
+    fields.forEach(([target, label]) => {
+      const wrap = document.createElement("label");
+      wrap.className = "mapping-field";
+      const caption = document.createElement("span");
+      caption.textContent = target + " ← " + label;
+      const input = document.createElement("input");
+      input.className = "form-control form-control-sm";
+      input.value = mapping[target] || "";
+      input.placeholder = "Source CSV column";
+      input.maxLength = 100;
+      input.setAttribute("aria-label", "Source CSV column for " + label);
+      input.addEventListener("change", () => {
+        const next = { ...(config.mapping || {}) };
+        if (input.value.trim()) next[target] = input.value.trim();
+        else delete next[target];
+        nodes[index] = { type: "map_fields", mapping: next };
+        markDirty();
+      });
+      wrap.append(caption, input);
+      editor.append(wrap);
+    });
+    return editor;
   };
 
   const makeConditionEditor = (node, index) => {
@@ -111,7 +147,11 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
-      if (type === "conditional_branch") {
+      if (type === "map_fields") {
+        node.classList.add("workflow-node-mapping");
+        node.append(makeMappingEditor(nodeData, index));
+      }
+      if (type === "conditional_branch" || type === "map_fields") {
         node.classList.add("workflow-node-conditional");
         node.append(makeConditionEditor(nodeData, index));
       }
@@ -129,7 +169,7 @@
         remove.type = "button";
         remove.className = "node-remove";
         remove.textContent = "Remove";
-        remove.setAttribute("aria-label", "Remove conditional branch");
+        remove.setAttribute("aria-label", "Remove " + info[0]);
         remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
@@ -274,7 +314,9 @@
       const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
       const newNode = type === "conditional_branch"
         ? { type, field: "plan", operator: "equals", value: "VIP" }
-        : type;
+        : type === "map_fields"
+          ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
+          : type;
       nodes.splice(reportIndex < 0 ? nodes.length : reportIndex, 0, newNode);
       markDirty();
       result.textContent = "";

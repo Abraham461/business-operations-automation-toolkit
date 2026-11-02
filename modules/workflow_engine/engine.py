@@ -8,6 +8,7 @@ from modules.document_automation.generator import generate_customer_pdfs
 ALLOWED_NODES = {
     "manual_trigger",
     "read_csv",
+    "map_fields",
     "validate_rows",
     "conditional_branch",
     "generate_pdfs",
@@ -52,8 +53,27 @@ def validate_workflow(nodes):
         raise ValueError("A workflow must start with exactly one Manual trigger.")
     if types.count("read_csv") != 1:
         raise ValueError("Add exactly one Read CSV action.")
+    if types.count("map_fields") > 1:
+        raise ValueError("A workflow can contain only one Map fields action.")
+    if "map_fields" in types:
+        if types.index("map_fields") < types.index("read_csv"):
+            raise ValueError("Map fields must follow Read CSV.")
+        if types.index("map_fields") > types.index("validate_rows"):
+            raise ValueError("Map fields must come before Validate rows.")
+        config = nodes[types.index("map_fields")]
+        mapping = config.get("mapping", {}) if isinstance(config, dict) else {}
+        if not isinstance(mapping, dict) or not mapping:
+            raise ValueError("Configure at least one field mapping.")
+        allowed_targets = REQUIRED_COLUMNS
+        for target, source in mapping.items():
+            if target not in allowed_targets:
+                raise ValueError(f"Unsupported target field: {target}.")
+            if not isinstance(source, str) or not source.strip() or len(source) > 100:
+                raise ValueError("Each mapping needs a valid source CSV column.")
     if "validate_rows" not in types or types.index("validate_rows") < types.index("read_csv"):
         raise ValueError("Add Validate rows after Read CSV.")
+    if "map_fields" in types and types.index("validate_rows") < types.index("map_fields"):
+        raise ValueError("Validate rows must follow Map fields.")
     if types.count("conditional_branch") > 1:
         raise ValueError("A workflow can contain only one Conditional branch in this MVP.")
     if "conditional_branch" in types:
@@ -146,6 +166,27 @@ def run_workflow(nodes, csv_path, output_folder):
                         context["headers"] = reader.fieldnames
                         context["records"] = list(reader)
                     step["message"] = f"Read {len(context['records'])} row(s)."
+                elif action == "map_fields":
+                    mapping = node.get("mapping", {}) if isinstance(node, dict) else {}
+                    missing_sources = sorted({
+                        source.strip() for source in mapping.values()
+                        if source.strip() not in context.get("headers", [])
+                    })
+                    if missing_sources:
+                        raise ValueError(
+                            "Mapping source column(s) not found: " + ", ".join(missing_sources)
+                        )
+                    mapped_records = []
+                    for row in context.get("records", []):
+                        mapped = dict(row)
+                        for target, source in mapping.items():
+                            mapped[target] = row.get(source.strip(), "")
+                        mapped_records.append(mapped)
+                    context["records"] = mapped_records
+                    context["headers"] = list(dict.fromkeys(
+                        list(context.get("headers", [])) + list(mapping.keys())
+                    ))
+                    step["message"] = f"Mapped {len(mapping)} field(s) across {len(mapped_records)} row(s)."
                 elif action == "validate_rows":
                     missing = sorted(REQUIRED_COLUMNS - set(context.get("headers", [])))
                     if missing:

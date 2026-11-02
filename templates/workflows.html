@@ -8,11 +8,12 @@
     <div class="card-heading"><div><span class="card-kicker">ACTION LIBRARY</span><h2>Add an action</h2><p>Build your process from top to bottom.</p></div></div>
     <div class="action-option"><span class="workflow-node-icon trigger-node"><i class="bi bi-play-circle"></i></span><div><strong>Manual trigger</strong><small>Start the workflow</small></div><button type="button" disabled>+</button></div>
     <div class="action-option"><span class="workflow-node-icon data-node"><i class="bi bi-filetype-csv"></i></span><div><strong>Read CSV</strong><small>Load uploaded records</small></div><button type="button" data-add-node="read_csv">+</button></div>
+    <div class="action-option"><span class="workflow-node-icon map-node"><i class="bi bi-arrow-left-right"></i></span><div><strong>Map fields</strong><small>Match CSV columns to customer fields</small></div><button type="button" data-add-node="map_fields">+</button></div>
     <div class="action-option"><span class="workflow-node-icon validate-node"><i class="bi bi-check2-square"></i></span><div><strong>Validate rows</strong><small>Check required fields</small></div><button type="button" data-add-node="validate_rows">+</button></div>
     <div class="action-option"><span class="workflow-node-icon condition-node"><i class="bi bi-signpost-split"></i></span><div><strong>Conditional branch</strong><small>Route matching CSV rows</small></div><button type="button" data-add-node="conditional_branch">+</button></div>
     <div class="action-option"><span class="workflow-node-icon document-node"><i class="bi bi-file-earmark-pdf"></i></span><div><strong>Generate PDFs</strong><small>Create customer documents</small></div><button type="button" data-add-node="generate_pdfs">+</button></div>
     <div class="action-option"><span class="workflow-node-icon report-node"><i class="bi bi-clipboard-data"></i></span><div><strong>Execution report</strong><small>Summarize the run</small></div><button type="button" disabled>+</button></div>
-    <p class="workflow-hint"><i class="bi bi-info-circle"></i> Conditions support equals, contains, numeric comparisons and empty checks. This release supports one row-filter branch per workflow.</p>
+    <p class="workflow-hint"><i class="bi bi-info-circle"></i> Map source columns to customer fields before validation. Conditions support equals, contains, numeric comparisons and empty checks.</p>
   </aside>
   <section class="surface-card workflow-canvas">
     <div class="workflow-canvas-head"><div><span class="card-kicker">WORKFLOW CANVAS</span><h2>Customer document pipeline</h2><p>Actions execute in the order shown.</p></div><button type="button" class="btn btn-light btn-sm" id="reset-workflow"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</button></div>

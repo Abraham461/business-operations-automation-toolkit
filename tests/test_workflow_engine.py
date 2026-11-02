@@ -46,6 +46,66 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+    def test_maps_source_columns_before_validation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = os.path.join(folder, "mapped.csv")
+            with open(source_path, "w", newline="", encoding="utf-8") as source:
+                writer = csv.DictWriter(source, fieldnames=["full_name", "ref", "contact", "tier"])
+                writer.writeheader()
+                writer.writerow({
+                    "full_name": "Mapped Customer",
+                    "ref": "M001",
+                    "contact": "mapped@example.com",
+                    "tier": "VIP",
+                })
+            nodes = [
+                "manual_trigger",
+                "read_csv",
+                {
+                    "type": "map_fields",
+                    "mapping": {
+                        "customer_name": "full_name",
+                        "customer_id": "ref",
+                        "email": "contact",
+                        "plan": "tier",
+                    },
+                },
+                "validate_rows",
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Mapped 4 field(s)", result["steps"][2]["message"])
+
+    def test_rejects_mapping_with_missing_source_column(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample",
+                "customer_id": "C001",
+                "email": "sample@example.com",
+                "plan": "VIP",
+            }])
+            nodes = [
+                "manual_trigger",
+                "read_csv",
+                {"type": "map_fields", "mapping": {"customer_name": "full_name"}},
+                "validate_rows",
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["steps"][2]["status"], "failed")
+
+    def test_rejects_mapping_after_validation(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger",
+                "read_csv",
+                "validate_rows",
+                {"type": "map_fields", "mapping": {"customer_name": "name"}},
+                "execution_report",
+            ])
+
     def test_runs_sequential_csv_validation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
