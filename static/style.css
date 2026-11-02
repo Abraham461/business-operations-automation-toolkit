@@ -333,3 +333,5 @@ textarea.form-control{resize:vertical;min-height:110px}
 .mapping-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .mapping-field>span{font-size:9px;color:#758197;font-weight:700}
 @media(max-width:700px){.mapping-editor{grid-template-columns:1fr;padding-left:0}}
+
+.filter-node{background:#e8f5ee;color:#39845f}
