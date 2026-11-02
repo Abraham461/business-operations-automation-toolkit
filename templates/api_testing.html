@@ -1,40 +1,45 @@
 {% extends "base.html" %}
-{% block title %}API Testing{% endblock %}
+{% block title %}API testing{% endblock %}
+{% block breadcrumb %}API testing{% endblock %}
 {% block content %}
-<h1 class="h2 mb-2">API testing</h1>
-<p class="text-secondary">Send a request to an API you own or are authorized to test. Do not submit credentials or confidential endpoints.</p>
-<div class="card mb-3"><div class="card-body">
-  <form method="post" action="/api-testing/run">
-    <label class="form-label">Endpoint URL</label>
-    <input class="form-control mb-3" name="url" type="url" placeholder="https://jsonplaceholder.typicode.com/posts/1" value="{{ previous.url if previous else '' }}" required>
-    <div class="row">
-      <div class="col-md-6"><label class="form-label">Method</label>
-        <select class="form-select mb-3" name="method">
-          {% for method in ['GET','POST','PUT','PATCH','DELETE'] %}
-          <option {% if previous and previous.method == method %}selected{% endif %}>{{ method }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-6"><label class="form-label">Expected status code</label>
-        <input class="form-control mb-3" name="expected_status" type="number" value="{{ previous.expected_status if previous else '200' }}">
-      </div>
-    </div>
-    <label class="form-label">JSON request body (optional)</label>
-    <textarea class="form-control mb-3 code" name="body" rows="5" placeholder='{"title":"demo","body":"hello","userId":1}'>{{ previous.body if previous else '' }}</textarea>
-    <button class="btn btn-primary">Run API test</button>
-  </form>
-</div></div>
-{% if result %}
-<div class="card"><div class="card-body">
-  <h2 class="h5">Test result
-    <span class="badge {{ 'text-bg-success' if result.success else 'text-bg-danger' }}">{{ 'PASS' if result.success else 'FAIL' }}</span>
-  </h2>
-  {% if result.error %}<div class="alert alert-danger">{{ result.error }}</div>
-  {% else %}
-  <p class="mb-1">HTTP status: <strong>{{ result.status_code }}</strong> (expected {{ result.expected_status }})</p>
-  <p class="mb-2">Response time: {{ result.elapsed_ms }} ms</p>
-  <pre class="result">{{ result.response_body | tojson(indent=2) }}</pre>
-  {% endif %}
-</div></div>
-{% endif %}
+<div class="page-intro">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE 03</div><h1>API testing</h1><p>Send a REST request and validate the response against your expected HTTP status.</p></div>
+  <span class="page-icon icon-teal"><i class="bi bi-braces"></i></span>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <section class="surface-card">
+      <div class="card-heading"><div><span class="card-kicker">REQUEST CONFIGURATION</span><h2>Build your request</h2><p>Use an endpoint you own or are authorized to test.</p></div><span class="step-number">01</span></div>
+      <form method="post" action="/api-testing/run">
+        <label class="form-label" for="endpoint-url">Endpoint URL</label>
+        <input id="endpoint-url" class="form-control mb-3" name="url" type="url" placeholder="https://jsonplaceholder.typicode.com/posts/1" value="{{ previous.url if previous else '' }}" required>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label" for="http-method">HTTP method</label><select id="http-method" class="form-select" name="method">{% for method in ['GET','POST','PUT','PATCH','DELETE'] %}<option {% if previous and previous.method == method %}selected{% endif %}>{{ method }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label" for="expected-status">Expected status</label><input id="expected-status" class="form-control" name="expected_status" type="number" min="100" max="599" value="{{ previous.expected_status if previous else '200' }}"></div>
+        </div>
+        <label class="form-label mt-3" for="request-body">JSON request body <span class="optional-label">OPTIONAL</span></label>
+        <textarea id="request-body" class="form-control code request-editor" name="body" rows="7" placeholder='{"title":"demo","body":"hello","userId":1}'>{{ previous.body if previous else '' }}</textarea>
+        <div class="form-foot"><span><i class="bi bi-shield-check"></i> Only test authorized endpoints</span><button class="btn btn-primary app-primary-btn" type="submit"><i class="bi bi-play-fill me-1"></i>Run API test <i class="bi bi-arrow-right ms-2"></i></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="col-lg-5">
+    {% if result %}
+    <section class="surface-card output-card">
+      <div class="output-header"><div><span class="card-kicker">EXECUTION RESULT</span><h2>Test report</h2></div><span class="result-pill {{ 'pass-pill' if result.success else 'fail-pill' }}"><i class="bi {{ 'bi-check-circle-fill' if result.success else 'bi-x-circle-fill' }}"></i> {{ 'PASS' if result.success else 'FAIL' }}</span></div>
+      {% if result.error %}<div class="alert alert-danger mt-3">{{ result.error }}</div>{% else %}
+      <div class="metric-pair"><div><small>HTTP STATUS</small><strong>{{ result.status_code }}</strong></div><div><small>EXPECTED</small><strong>{{ result.expected_status }}</strong></div><div><small>RESPONSE TIME</small><strong>{{ result.elapsed_ms }} <em>ms</em></strong></div></div>
+      <h3 class="output-label mt-4"><i class="bi bi-braces"></i> Response body</h3><pre class="result">{{ result.response_body | tojson(indent=2) }}</pre>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="empty-output api-empty">
+      <div class="empty-illustration"><span><i class="bi bi-braces"></i></span><i class="bi bi-arrow-left-right float-file"></i><i class="bi bi-check2-circle float-chat"></i></div>
+      <h3>Ready when you are</h3><p>Configure an endpoint and run a request. Your status validation and response payload will appear here.</p>
+      <div class="supported-methods"><span>GET</span><span>POST</span><span>PUT</span><span>PATCH</span><span>DELETE</span></div>
+    </section>
+    {% endif %}
+    <div class="security-note"><i class="bi bi-exclamation-circle"></i><p><strong>Security reminder</strong><br>Do not submit credentials, private tokens or confidential endpoints. This tool is a local portfolio demonstration, not a production API gateway.</p></div>
+  </div>
+</div>
 {% endblock %}
