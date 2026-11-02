@@ -11,6 +11,7 @@ load_dotenv()
 from modules.ai_processing.processor import process_document_text
 from modules.api_testing.runner import run_api_test
 from modules.document_automation.generator import generate_customer_pdfs
+from modules.workflow_engine.engine import run_workflow, validate_workflow
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
@@ -117,6 +118,43 @@ def api_testing_run():
             "expected_status": expected_status,
         },
     )
+
+
+
+@app.get('/workflows')
+def workflows():
+    return render_template('workflows.html')
+
+
+@app.post('/workflows/run')
+def workflows_run():
+    uploaded_file = request.files.get('file')
+    if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.csv'):
+        return {'status': 'failed', 'error': 'Upload a CSV file to start the workflow.', 'steps': []}, 400
+    try:
+        nodes = json.loads(request.form.get('workflow', '[]'))
+        validate_workflow(nodes)
+        safe_name = secure_filename(uploaded_file.filename)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], f'{uuid4().hex}_{safe_name}')
+        uploaded_file.save(path)
+        result = run_workflow(nodes, path, app.config['OUTPUT_FOLDER'])
+        result.pop('archive', None)
+        if result['status'] == 'success':
+            result['download_url'] = url_for('workflow_download')
+        return result, (200 if result['status'] == 'success' else 422)
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        return {'status': 'failed', 'error': str(exc), 'steps': []}, 400
+    except Exception:
+        app.logger.exception('Workflow execution failed')
+        return {'status': 'failed', 'error': 'The workflow failed unexpectedly.', 'steps': []}, 500
+
+
+@app.get('/workflows/download')
+def workflow_download():
+    archive = os.path.join(app.config['OUTPUT_FOLDER'], 'customer_documents.zip')
+    if not os.path.isfile(archive):
+        return {'error': 'Run a successful document workflow first.'}, 404
+    return send_file(archive, as_attachment=True, download_name='customer_documents.zip')
 
 
 @app.get("/health")
