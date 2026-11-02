@@ -7,6 +7,7 @@
     filter_rows: ["Filter rows", "Keep records that match a rule", "bi-funnel", "filter-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     http_request: ["HTTP Request", "Call an approved HTTPS endpoint", "bi-globe", "http-node"],
+    ai_process: ["AI text processing", "Summarize text from a CSV column", "bi-stars", "ai-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
   };
@@ -202,6 +203,45 @@
     return editor;
   };
 
+
+  const makeAiEditor = (node, index) => {
+    const config = configOf(node);
+    const editor = document.createElement("div");
+    editor.className = "ai-editor";
+    const makeField = (caption, value, placeholder, maxLength) => {
+      const label = document.createElement("label");
+      label.className = "ai-field";
+      const title = document.createElement("span");
+      title.textContent = caption;
+      const input = document.createElement("input");
+      input.className = "form-control form-control-sm";
+      input.value = value || "";
+      input.placeholder = placeholder;
+      input.maxLength = maxLength;
+      label.append(title, input);
+      return { label, input };
+    };
+    const source = makeField("CSV text column", config.field || "description", "e.g. description", 100);
+    const summary = makeField("Summary variable", config.output_variable || "ai_summary", "ai_summary", 64);
+    const details = makeField("Key details variable", config.details_variable || "ai_key_details", "ai_key_details", 64);
+    const update = () => {
+      nodes[index] = {
+        type: "ai_process",
+        field: source.input.value.trim(),
+        output_variable: summary.input.value.trim(),
+        details_variable: details.input.value.trim()
+      };
+      markDirty();
+    };
+    [source.input, summary.input, details.input].forEach(input => input.addEventListener("change", update));
+    editor.append(source.label, summary.label, details.label);
+    const hint = document.createElement("small");
+    hint.className = "ai-editor-hint";
+    hint.textContent = "Uses OPENROUTER_API_KEY when configured; otherwise returns a labelled demo result. Input is limited to 20,000 characters.";
+    editor.append(hint);
+    return editor;
+  };
+
   const render = () => {
     list.replaceChildren();
     nodes.forEach((nodeData, index) => {
@@ -224,6 +264,10 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
+      if (type === "ai_process") {
+        node.classList.add("workflow-node-ai");
+        node.append(makeAiEditor(nodeData, index));
+      }
       if (type === "http_request") {
         node.classList.add("workflow-node-http");
         node.append(makeHttpEditor(nodeData, index));
@@ -400,6 +444,8 @@
         ? { type, field: "plan", operator: "equals", value: "VIP" }
         : type === "http_request"
           ? { type, method: "GET", url: "https://api.example.com/resource", headers: { Accept: "application/json" }, body: null, extract: {} }
+        : type === "ai_process"
+          ? { type, field: "description", output_variable: "ai_summary", details_variable: "ai_key_details" }
         : type === "map_fields"
           ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
           : type;

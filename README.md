@@ -8,7 +8,7 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 
 | Workspace | What it does | Current MVP scope |
 |---|---|---|
-| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → optional field mapping → row validation → optional row filter → optional conditional row routing → PDF generation → execution report; saveable definitions, versions and execution history |
+| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → field mapping/validation/filtering → optional AI text processing and HTTPS requests → PDF generation → execution report; saveable definitions, versions and execution history |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
 | **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
@@ -60,11 +60,14 @@ You can now:
 - Map differently named source CSV columns to the required customer fields before validation.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
 - Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts.
+- Summarize a selected CSV text column using the existing OpenRouter integration; pass the summary and key details to later actions as variables. Without an API key, the existing labelled demo mode is used.
 - Optionally configure one conditional row branch using a CSV column and an operator.
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
 Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only the rows that pass the filter. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
+
+AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
 
 HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
 
@@ -152,7 +155,7 @@ These tests cover document generation, basic API runner behavior, AI demo mode, 
 
 1. **Completed:** persist workflow definitions, versions and execution history locally.
 2. **Completed in this branch:** configurable field mapping, row filtering and one conditional row branch.
-3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining. Add AI processing actions to the workflow catalogue.
+3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining, plus AI text processing with workflow-variable output.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
 5. Add scheduling, background execution, retries and monitoring.
 6. Add authentication, CSRF protection, request allowlists, rate limits and deployment hardening before considering public hosting.

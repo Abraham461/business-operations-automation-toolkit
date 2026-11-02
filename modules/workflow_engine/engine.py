@@ -3,6 +3,7 @@ import os
 import tempfile
 from datetime import datetime, timezone
 
+from modules.ai_processing.processor import process_document_text
 from modules.document_automation.generator import generate_customer_pdfs
 from modules.workflow_engine.http_action import run_http_action
 
@@ -14,6 +15,7 @@ ALLOWED_NODES = {
     "filter_rows",
     "conditional_branch",
     "http_request",
+    "ai_process",
     "generate_pdfs",
     "execution_report",
 }
@@ -117,6 +119,25 @@ def validate_workflow(nodes):
     if "generate_pdfs" in types and "conditional_branch" in types:
         if types.index("generate_pdfs") < types.index("conditional_branch"):
             raise ValueError("Generate PDFs must follow Conditional branch.")
+    if types.count("ai_process") > 1:
+        raise ValueError("A workflow can contain only one AI text processing action in this MVP.")
+    if "ai_process" in types:
+        ai_index = types.index("ai_process")
+        if ai_index < types.index("validate_rows"):
+            raise ValueError("AI text processing must follow Validate rows.")
+        config = nodes[ai_index] if isinstance(nodes[ai_index], dict) else {}
+        field = str(config.get("field", "")).strip()
+        output_variable = config.get("output_variable", "ai_summary")
+        details_variable = config.get("details_variable", "ai_key_details")
+        variable_pattern = __import__("re").compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
+        if not field or len(field) > 100:
+            raise ValueError("Choose a valid CSV column for AI text processing.")
+        if not isinstance(output_variable, str) or not variable_pattern.fullmatch(output_variable):
+            raise ValueError("AI summary variable must use letters, numbers and underscores.")
+        if not isinstance(details_variable, str) or not variable_pattern.fullmatch(details_variable):
+            raise ValueError("AI details variable must use letters, numbers and underscores.")
+        if output_variable == details_variable:
+            raise ValueError("AI summary and details must use different variable names.")
     for node_type, node in zip(types, nodes):
         if node_type == "http_request":
             config = node if isinstance(node, dict) else {}
@@ -286,6 +307,30 @@ def run_workflow(nodes, csv_path, output_folder):
                         f"TRUE branch: {len(matched)} row(s) matched."
                         if matched
                         else "FALSE branch: no rows matched. PDF generation will be skipped."
+                    )
+                elif action == "ai_process":
+                    field = str(node.get("field", "")).strip()
+                    if field not in context.get("headers", []):
+                        raise ValueError(f"AI text column '{field}' is not present in the CSV.")
+                    source_records = context.get("valid_records", context.get("records", []))
+                    source_text = "\\n".join(
+                        str(row.get(field, "")).strip()
+                        for row in source_records
+                        if str(row.get(field, "")).strip()
+                    )[:20000]
+                    if not source_text:
+                        raise ValueError(f"AI text column '{field}' contains no usable text.")
+                    ai_result = process_document_text(source_text)
+                    summary_variable = node.get("output_variable", "ai_summary")
+                    details_variable = node.get("details_variable", "ai_key_details")
+                    context["variables"][summary_variable] = ai_result.get("summary", "")
+                    context["variables"][details_variable] = "\\n".join(
+                        str(item) for item in ai_result.get("key_details", [])
+                    )
+                    step["message"] = (
+                        f"Processed {len(source_text)} characters in "
+                        f"{ai_result.get('mode', 'unknown')} mode; saved summary and key details "
+                        "as workflow variables."
                     )
                 elif action == "http_request":
                     request_result = run_http_action(node, context["variables"])

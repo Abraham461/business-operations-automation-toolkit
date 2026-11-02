@@ -195,6 +195,47 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+    def test_ai_action_sends_csv_column_text_and_chains_variables(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = os.path.join(folder, "ai_input.csv")
+            with open(source_path, "w", newline="", encoding="utf-8") as source:
+                writer = csv.DictWriter(source, fieldnames=[
+                    "customer_name", "customer_id", "email", "plan", "description"
+                ])
+                writer.writeheader()
+                writer.writerow({
+                    "customer_name": "Sample", "customer_id": "C001",
+                    "email": "sample@example.com", "plan": "VIP",
+                    "description": "Customer requested an address update.",
+                })
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "ai_process", "field": "description"},
+                {"type": "http_request", "method": "POST", "url": "https://api.example.com/summary"},
+                "execution_report",
+            ]
+            with patch("modules.workflow_engine.engine.process_document_text", return_value={
+                "mode": "openrouter",
+                "summary": "Customer requests an address update.",
+                "key_details": ["Address update requested."],
+            }) as ai_mock, patch(
+                "modules.workflow_engine.engine.run_http_action",
+                return_value={"method": "POST", "status_code": 200, "variables": {}},
+            ) as http_mock:
+                result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("address update", ai_mock.call_args.args[0].lower())
+            self.assertEqual(http_mock.call_args.args[1]["ai_summary"], "Customer requests an address update.")
+            self.assertEqual(http_mock.call_args.args[1]["ai_key_details"], "Address update requested.")
+
+    def test_ai_action_rejects_invalid_variable_names(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "ai_process", "field": "description", "output_variable": "bad-name"},
+                "execution_report",
+            ])
+
     def test_http_request_action_chains_extracted_variables(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
