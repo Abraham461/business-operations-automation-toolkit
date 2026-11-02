@@ -70,6 +70,7 @@ class WorkflowStore:
         if not isinstance(definition, list):
             raise ValueError("Workflow definition must be a list of actions.")
 
+        requested_id = workflow_id is not None
         workflow_id = workflow_id or uuid4().hex
         now = _now()
         definition_json = json.dumps(definition, separators=(",", ":"), ensure_ascii=False)
@@ -79,15 +80,19 @@ class WorkflowStore:
                 existing = connection.execute(
                     "SELECT id FROM workflows WHERE id = ?", (workflow_id,)
                 ).fetchone()
-                if workflow_id and existing is None and workflow_id != "":
-                    if workflow_id and len(workflow_id) != 32:
-                        raise KeyError("Workflow not found.")
+                if requested_id and existing is None:
+                    raise KeyError("Workflow not found.")
                 if existing is None:
                     connection.execute(
                         "INSERT INTO workflows (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
                         (workflow_id, name, now, now),
                     )
-                    version_number = 1
+                    connection.execute(
+                        """INSERT INTO workflow_versions
+                           (id, workflow_id, version_number, definition_json, created_at)
+                           VALUES (?, ?, 1, ?, ?)""",
+                        (uuid4().hex, workflow_id, definition_json, now),
+                    )
                 else:
                     latest = connection.execute(
                         """SELECT version_number, definition_json FROM workflow_versions
@@ -98,9 +103,7 @@ class WorkflowStore:
                         "UPDATE workflows SET name = ?, updated_at = ? WHERE id = ?",
                         (name, now, workflow_id),
                     )
-                    if latest and latest["definition_json"] == definition_json:
-                        pass
-                    else:
+                    if not latest or latest["definition_json"] != definition_json:
                         version_number = (latest["version_number"] if latest else 0) + 1
                         connection.execute(
                             """INSERT INTO workflow_versions
@@ -108,13 +111,6 @@ class WorkflowStore:
                                VALUES (?, ?, ?, ?, ?)""",
                             (uuid4().hex, workflow_id, version_number, definition_json, now),
                         )
-                if existing is None:
-                    connection.execute(
-                        """INSERT INTO workflow_versions
-                           (id, workflow_id, version_number, definition_json, created_at)
-                           VALUES (?, ?, 1, ?, ?)""",
-                        (uuid4().hex, workflow_id, definition_json, now),
-                    )
         finally:
             connection.close()
         return self.get_workflow(workflow_id)

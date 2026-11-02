@@ -46,6 +46,14 @@ class WorkflowStoreTests(unittest.TestCase):
         self.assertEqual(second["name"], "Renamed checks")
         self.assertEqual(len(second["versions"]), 1)
 
+    def test_unknown_workflow_id_is_not_created_implicitly(self):
+        with self.assertRaises(KeyError):
+            self.store.save_workflow(
+                "Unexpected workflow",
+                ["manual_trigger", "read_csv", "execution_report"],
+                "f" * 32,
+            )
+
     def test_execution_history_is_persisted(self):
         saved = self.store.save_workflow(
             "Customer checks",
