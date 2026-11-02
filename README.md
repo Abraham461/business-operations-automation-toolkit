@@ -8,7 +8,7 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 
 | Workspace | What it does | Current MVP scope |
 |---|---|---|
-| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → optional field mapping → row validation → conditional row filter → PDF generation → execution report; saveable definitions, versions and execution history |
+| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → optional field mapping → row validation → optional row filter → optional conditional row routing → PDF generation → execution report; saveable definitions, versions and execution history |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
 | **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
@@ -58,15 +58,16 @@ You can now:
 - Create a new version when a saved workflow's action sequence or condition changes.
 - Review recent execution history for each saved workflow.
 - Map differently named source CSV columns to the required customer fields before validation.
-- Configure one conditional row branch using a CSV column and an operator.
+- Filter valid records using a configurable CSV column and operator before downstream actions.
+- Optionally configure one conditional row branch using a CSV column and an operator.
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
-Condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values.
+Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
 
 The database is created automatically at `instance/opspilot.sqlite3` on first launch. Set `OPSPILOT_DATABASE` in `.env` to use another local database path. Existing workflow files are not migrated because the earlier MVP did not persist them.
 
-The field mapper can map the customer name, customer ID, email and plan fields. It preserves original source columns and adds mapped canonical fields. The current condition node is intentionally limited to one row-filter branch per workflow. Nested branches, arbitrary expressions and loops are not supported.
+The field mapper can map the customer name, customer ID, email and plan fields. It preserves original source columns and adds mapped canonical fields. The current MVP supports one row filter and one conditional branch per workflow. Nested branches, arbitrary expressions and loops are not supported.
 
 ## Try the sample workflows
 
@@ -111,7 +112,7 @@ After installing dependencies:
 python -m unittest discover -s tests -v
 ```
 
-These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence and conditional row routing. They do **not** replace a full browser-based test of the Flask application.
+These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering and conditional row routing. They do **not** replace a full browser-based test of the Flask application.
 
 ## Project structure
 
@@ -147,11 +148,11 @@ These tests cover document generation, basic API runner behavior, AI demo mode, 
 ## Roadmap
 
 1. **Completed:** persist workflow definitions, versions and execution history locally.
-2. **Completed in this branch:** one configurable conditional row branch with true/false execution behavior.
-3. Add configurable row filters, HTTP requests and AI tasks to the action catalogue.
+2. **Completed in this branch:** configurable field mapping, row filtering and one conditional row branch.
+3. Add HTTP request and AI processing actions to the workflow catalogue.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
 5. Add scheduling, background execution, retries and monitoring.
-6. Add authentication, request allowlists, rate limits and deployment hardening before considering public hosting.
+6. Add authentication, CSRF protection, request allowlists, rate limits and deployment hardening before considering public hosting.
 
 ## Portfolio note
 
