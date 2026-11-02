@@ -195,6 +195,84 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+
+    def test_set_variables_resolves_prior_variables(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample", "customer_id": "C001",
+                "email": "sample@example.com", "plan": "VIP",
+            }])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {
+                    "api_base": "https://api.example.com",
+                    "customer_ref": "{{customer_id}}",
+                    "label": "Customer {{customer_name}}",
+                }},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Set 3 workflow variable(s)", result["steps"][3]["message"])
+
+    def test_set_variables_rejects_missing_reference(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample", "customer_id": "C001",
+                "email": "sample@example.com", "plan": "VIP",
+            }])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {"copy": "{{unknown_value}}"}},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("has not been defined", result["steps"][3]["message"])
+
+    def test_parse_json_extracts_nested_and_array_values(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample", "customer_id": "C001",
+                "email": "sample@example.com", "plan": "VIP",
+            }])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {
+                    "api_response": '{"data":{"customer":{"id":"C100"},"items":[{"code":"A1"}]}}'
+                }},
+                {"type": "parse_json", "source_variable": "api_response",
+                 "extract": {"external_id": "data.customer.id", "item_code": "data.items.0.code"}},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Parsed JSON and created 2", result["steps"][4]["message"])
+
+    def test_parse_json_rejects_invalid_source(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample", "customer_id": "C001",
+                "email": "sample@example.com", "plan": "VIP",
+            }])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {"payload": "not-json"}},
+                {"type": "parse_json", "source_variable": "payload", "extract": {"id": "data.id"}},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("does not contain valid JSON", result["steps"][4]["message"])
+
+    def test_variable_action_validates_names_and_types(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {"bad-name": "value"}},
+                "execution_report",
+            ])
+
     def test_ai_action_sends_csv_column_text_and_chains_variables(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = os.path.join(folder, "ai_input.csv")

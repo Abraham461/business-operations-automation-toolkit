@@ -8,6 +8,8 @@
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     http_request: ["HTTP Request", "Call an approved HTTPS endpoint", "bi-globe", "http-node"],
     ai_process: ["AI text processing", "Summarize text from a CSV column", "bi-stars", "ai-node"],
+    set_variables: ["Set Variables", "Create or update workflow variables", "bi-braces", "variables-node"],
+    parse_json: ["Parse JSON", "Extract values from a JSON variable", "bi-braces-asterisk", "json-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
   };
@@ -242,6 +244,69 @@
     return editor;
   };
 
+
+  const makeJsonConfigEditor = (node, index, nodeType) => {
+    const config = configOf(node);
+    const editor = document.createElement("div");
+    editor.className = "workflow-config-editor";
+    const makeField = (caption, value, placeholder) => {
+      const label = document.createElement("label");
+      label.className = "workflow-config-field";
+      const title = document.createElement("span");
+      title.textContent = caption;
+      const input = document.createElement("textarea");
+      input.className = "form-control form-control-sm";
+      input.rows = 3;
+      input.value = JSON.stringify(value || {}, null, 2);
+      input.placeholder = placeholder;
+      label.append(title, input);
+      editor.append(label);
+      return input;
+    };
+    let valuesInput;
+    let sourceInput;
+    let extractInput;
+    if (nodeType === "set_variables") {
+      valuesInput = makeField("Variable assignments (JSON)", config.values || { api_base: "https://api.example.com", request_id: "{{customer_id}}" }, '{"token":"{{access_token}}"}');
+    } else {
+      const sourceLabel = document.createElement("label");
+      sourceLabel.className = "workflow-config-field";
+      const sourceTitle = document.createElement("span");
+      sourceTitle.textContent = "Source JSON variable";
+      sourceInput = document.createElement("input");
+      sourceInput.className = "form-control form-control-sm";
+      sourceInput.value = config.source_variable || "api_response";
+      sourceInput.maxLength = 64;
+      sourceLabel.append(sourceTitle, sourceInput);
+      editor.append(sourceLabel);
+      extractInput = makeField("JSON paths → output variables", config.extract || { customer_id: "data.customer.id", first_item: "data.items.0" }, '{"status":"result.status"}');
+    }
+    const update = () => {
+      try {
+        if (nodeType === "set_variables") {
+          const values = JSON.parse(valuesInput.value);
+          nodes[index] = { type: nodeType, values };
+        } else {
+          const extract = JSON.parse(extractInput.value);
+          nodes[index] = { type: nodeType, source_variable: sourceInput.value.trim(), extract };
+        }
+        markDirty();
+      } catch (_error) {
+        // Keep the last valid node configuration until the JSON editor is corrected.
+      }
+    };
+    (nodeType === "set_variables" ? [valuesInput] : [sourceInput, extractInput]).forEach(control => {
+      control.addEventListener("change", update);
+    });
+    const hint = document.createElement("small");
+    hint.className = "workflow-config-hint";
+    hint.textContent = nodeType === "set_variables"
+      ? "Use {{variable_name}} to reuse an earlier value. Values are text only; no code or expressions are evaluated."
+      : "Reads JSON from an existing workflow variable. Use dot paths and numeric array indexes, for example data.items.0.id.";
+    editor.append(hint);
+    return editor;
+  };
+
   const render = () => {
     list.replaceChildren();
     nodes.forEach((nodeData, index) => {
@@ -264,6 +329,10 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
+      if (type === "set_variables" || type === "parse_json") {
+        node.classList.add("workflow-node-config");
+        node.append(makeJsonConfigEditor(nodeData, index, type));
+      }
       if (type === "ai_process") {
         node.classList.add("workflow-node-ai");
         node.append(makeAiEditor(nodeData, index));
@@ -444,6 +513,10 @@
         ? { type, field: "plan", operator: "equals", value: "VIP" }
         : type === "http_request"
           ? { type, method: "GET", url: "https://api.example.com/resource", headers: { Accept: "application/json" }, body: null, extract: {} }
+        : type === "set_variables"
+          ? { type, values: { api_base: "https://api.example.com", request_id: "{{customer_id}}" } }
+        : type === "parse_json"
+          ? { type, source_variable: "api_response", extract: { customer_id: "data.customer.id" } }
         : type === "ai_process"
           ? { type, field: "description", output_variable: "ai_summary", details_variable: "ai_key_details" }
         : type === "map_fields"
@@ -460,8 +533,20 @@
         const downstreamIndex = nodes.findIndex(node => ["filter_rows", "conditional_branch", "http_request", "generate_pdfs", "execution_report"].includes(typeOf(node)));
         insertAt = downstreamIndex >= 0 ? downstreamIndex : validationIndex + 1;
       }
+      if (type === "set_variables") {
+        const validationIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
+        const downstreamIndex = nodes.findIndex(node => ["ai_process", "http_request", "parse_json", "generate_pdfs", "execution_report"].includes(typeOf(node)));
+        insertAt = downstreamIndex >= 0 ? downstreamIndex : validationIndex + 1;
+      }
+      if (type === "parse_json") {
+        const lastHttpIndex = nodes.reduce((found, node, i) => typeOf(node) === "http_request" ? i : found, -1);
+        const pdfPosition = nodes.findIndex(node => typeOf(node) === "generate_pdfs");
+        insertAt = lastHttpIndex >= 0 ? lastHttpIndex + 1 : pdfPosition >= 0 ? pdfPosition : insertAt;
+      }
       if (type === "http_request") {
-        if (aiIndex >= 0) insertAt = aiIndex + 1;
+        const jsonIndex = nodes.findIndex(node => typeOf(node) === "parse_json");
+        if (jsonIndex >= 0) insertAt = jsonIndex + 1;
+        else if (aiIndex >= 0) insertAt = aiIndex + 1;
         else if (pdfIndex >= 0) insertAt = pdfIndex;
       }
       nodes.splice(insertAt, 0, newNode);

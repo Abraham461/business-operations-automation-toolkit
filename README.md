@@ -8,7 +8,7 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 
 | Workspace | What it does | Current MVP scope |
 |---|---|---|
-| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → field mapping/validation/filtering → optional AI text processing and HTTPS requests → PDF generation → execution report; saveable definitions, versions and execution history |
+| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → field mapping/validation/filtering → optional Set Variables, AI text processing, JSON parsing and HTTPS requests → PDF generation → execution report; saveable definitions, versions and execution history |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
 | **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
@@ -60,6 +60,8 @@ You can now:
 - Map differently named source CSV columns to the required customer fields before validation.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
 - Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts.
+- Create or update reusable text variables with the Set Variables action. Values can reference earlier variables with `{{variable_name}}`.
+- Parse JSON stored in a workflow variable and extract nested object or array values into named variables using dot paths such as `data.items.0.id`.
 - Summarize a selected CSV text column using the existing OpenRouter integration; pass the summary and key details to later actions as variables. Without an API key, the existing labelled demo mode is used.
 - Optionally configure one conditional row branch using a CSV column and an operator.
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
@@ -118,7 +120,7 @@ After installing dependencies:
 python -m unittest discover -s tests -v
 ```
 
-These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering, conditional row routing and HTTP action configuration/variable chaining. They do **not** replace a full browser-based test of the Flask application.
+These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering, conditional row routing, reusable workflow variables, JSON extraction and HTTP action configuration/variable chaining. They do **not** replace a full browser-based test of the Flask application.
 
 ## Project structure
 
@@ -155,7 +157,7 @@ These tests cover document generation, basic API runner behavior, AI demo mode, 
 
 1. **Completed:** persist workflow definitions, versions and execution history locally.
 2. **Completed in this branch:** configurable field mapping, row filtering and one conditional row branch.
-3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining, plus AI text processing with workflow-variable output.
+3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining, AI text processing, reusable Set Variables and JSON Parse actions.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
 5. Add scheduling, background execution, retries and monitoring.
 6. Add authentication, CSRF protection, request allowlists, rate limits and deployment hardening before considering public hosting.

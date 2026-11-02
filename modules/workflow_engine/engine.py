@@ -1,5 +1,7 @@
 import csv
+import json
 import os
+import re
 import tempfile
 from datetime import datetime, timezone
 
@@ -16,6 +18,8 @@ ALLOWED_NODES = {
     "conditional_branch",
     "http_request",
     "ai_process",
+    "set_variables",
+    "parse_json",
     "generate_pdfs",
     "execution_report",
 }
@@ -161,11 +165,64 @@ def validate_workflow(nodes):
                     raise ValueError("Response variable names must use letters, numbers and underscores.")
                 if not isinstance(path, str) or not path.strip() or len(path) > 200:
                     raise ValueError("Each response variable needs a valid JSON path.")
+
+    variable_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
+    for node_type, node in zip(types, nodes):
+        config = node if isinstance(node, dict) else {}
+        if node_type == "set_variables":
+            values = config.get("values", {})
+            if not isinstance(values, dict) or not values or len(values) > 20:
+                raise ValueError("Set Variables needs 1 to 20 variable assignments.")
+            for name, value in values.items():
+                if not isinstance(name, str) or not variable_pattern.fullmatch(name):
+                    raise ValueError("Variable names must start with a letter and use only letters, numbers and underscores.")
+                if not isinstance(value, str) or len(value) > 2000:
+                    raise ValueError("Set Variables values must be text with at most 2,000 characters.")
+        elif node_type == "parse_json":
+            source_variable = config.get("source_variable", "")
+            extract = config.get("extract", {})
+            if not isinstance(source_variable, str) or not variable_pattern.fullmatch(source_variable):
+                raise ValueError("JSON Parse needs a valid source variable name.")
+            if not isinstance(extract, dict) or not extract or len(extract) > 20:
+                raise ValueError("JSON Parse needs 1 to 20 output mappings.")
+            for name, path in extract.items():
+                if not isinstance(name, str) or not variable_pattern.fullmatch(name):
+                    raise ValueError("JSON output variable names must start with a letter and use only letters, numbers and underscores.")
+                if not isinstance(path, str) or not path.strip() or len(path) > 200:
+                    raise ValueError("Each JSON output needs a valid dot path.")
     if types[-1] != "execution_report":
         raise ValueError("The final action must be Execution report.")
     if types.count("execution_report") != 1:
         raise ValueError("Add exactly one Execution report action.")
     return types
+
+
+
+def _resolve_variable_template(value, variables):
+    pattern = re.compile(r"{{([A-Za-z][A-Za-z0-9_]{0,63})}}")
+
+    def replace(match):
+        name = match.group(1)
+        if name not in variables:
+            raise ValueError(f"Workflow variable '{name}' has not been defined.")
+        resolved = variables[name]
+        if isinstance(resolved, (dict, list)):
+            return json.dumps(resolved, ensure_ascii=False)
+        return str(resolved)
+
+    return pattern.sub(replace, value)
+
+
+def _read_json_path(payload, path):
+    current = payload
+    for segment in path.split("."):
+        if isinstance(current, dict) and segment in current:
+            current = current[segment]
+        elif isinstance(current, list) and segment.isdigit() and int(segment) < len(current):
+            current = current[int(segment)]
+        else:
+            raise ValueError(f"JSON path '{path}' could not be found in the source value.")
+    return current
 
 
 def _matches(value, operator, expected):
@@ -308,6 +365,30 @@ def run_workflow(nodes, csv_path, output_folder):
                         if matched
                         else "FALSE branch: no rows matched. PDF generation will be skipped."
                     )
+                elif action == "set_variables":
+                    config = node if isinstance(node, dict) else {}
+                    assignments = config.get("values", {})
+                    for name, template in assignments.items():
+                        context["variables"][name] = _resolve_variable_template(
+                            template, context["variables"]
+                        )
+                    step["message"] = f"Set {len(assignments)} workflow variable(s)."
+                elif action == "parse_json":
+                    config = node if isinstance(node, dict) else {}
+                    source_name = config.get("source_variable", "")
+                    if source_name not in context["variables"]:
+                        raise ValueError(f"Source variable '{source_name}' has not been defined.")
+                    source_value = context["variables"][source_name]
+                    try:
+                        payload = source_value if isinstance(source_value, (dict, list)) else json.loads(str(source_value))
+                    except (TypeError, json.JSONDecodeError) as exc:
+                        raise ValueError(f"Variable '{source_name}' does not contain valid JSON.") from exc
+                    extracted = {
+                        name: _read_json_path(payload, path)
+                        for name, path in config.get("extract", {}).items()
+                    }
+                    context["variables"].update(extracted)
+                    step["message"] = f"Parsed JSON and created {len(extracted)} workflow variable(s)."
                 elif action == "ai_process":
                     config = node if isinstance(node, dict) else {}
                     field = str(config.get("field", "")).strip()
