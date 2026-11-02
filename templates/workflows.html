@@ -18,7 +18,8 @@
     <div class="row g-2 align-items-end mb-3">
       <div class="col-md-5"><label for="workflow-name" class="form-label">Workflow name</label><input id="workflow-name" class="form-control" maxlength="100" value="Customer document pipeline"></div>
       <div class="col-md-3"><button type="button" id="save-workflow" class="btn btn-outline-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i> Save workflow</button></div>
-      <div class="col-md-4"><label for="saved-workflows" class="form-label">Saved workflows</label><select id="saved-workflows" class="form-select"><option value="">Select a saved workflow</option></select></div>
+      <div class="col-md-2"><label for="saved-workflows" class="form-label">Saved workflows</label><select id="saved-workflows" class="form-select"><option value="">Select workflow</option></select></div>
+      <div class="col-md-2"><label for="workflow-version" class="form-label">Version</label><select id="workflow-version" class="form-select" disabled><option value="">Latest</option></select></div>
       <div class="col-12"><div id="workflow-library-status" class="small text-muted" role="status" aria-live="polite"></div></div>
     </div>
     <div id="workflow-nodes" class="workflow-nodes" aria-live="polite"></div>

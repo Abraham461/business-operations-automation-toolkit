@@ -10,13 +10,37 @@
   let nodes = defaults.slice();
   let currentWorkflowId = null;
   let currentVersionId = null;
+  let currentWorkflowData = null;
   const list = document.getElementById("workflow-nodes");
   const result = document.getElementById("workflow-result");
   const libraryStatus = document.getElementById("workflow-library-status");
   const savedSelect = document.getElementById("saved-workflows");
+  const versionSelect = document.getElementById("workflow-version");
   const history = document.getElementById("workflow-history");
 
-  const markDirty = () => { currentVersionId = null; };
+  const populateVersions = (workflow, selectedId) => {
+    versionSelect.replaceChildren();
+    (workflow.versions || []).forEach(version => {
+      const option = document.createElement("option");
+      option.value = version.id;
+      option.textContent = "v" + version.version_number;
+      versionSelect.append(option);
+    });
+    versionSelect.disabled = !(workflow.versions || []).length;
+    versionSelect.value = selectedId || "";
+  };
+
+  const markDirty = () => {
+    currentVersionId = null;
+    if (currentWorkflowData) {
+      const draft = document.createElement("option");
+      draft.value = "";
+      draft.textContent = "Unsaved draft";
+      versionSelect.replaceChildren(draft);
+      versionSelect.disabled = true;
+    }
+  };
+
   const render = () => {
     list.replaceChildren();
     nodes.forEach((type, index) => {
@@ -66,7 +90,7 @@
       savedSelect.replaceChildren();
       const placeholder = document.createElement("option");
       placeholder.value = "";
-      placeholder.textContent = "Select a saved workflow";
+      placeholder.textContent = "Select workflow";
       savedSelect.append(placeholder);
       (payload.workflows || []).forEach(workflow => {
         const option = document.createElement("option");
@@ -126,10 +150,11 @@
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Could not save workflow.");
-      const workflow = payload.workflow;
-      currentWorkflowId = workflow.id;
-      currentVersionId = workflow.latest_version ? workflow.latest_version.id : null;
-      libraryStatus.textContent = "Saved as version " + workflow.latest_version.version_number + ".";
+      currentWorkflowData = payload.workflow;
+      currentWorkflowId = currentWorkflowData.id;
+      currentVersionId = currentWorkflowData.latest_version.id;
+      populateVersions(currentWorkflowData, currentVersionId);
+      libraryStatus.textContent = "Saved as version " + currentWorkflowData.latest_version.version_number + ".";
       await refreshLibrary(currentWorkflowId);
       await refreshHistory();
     } catch (error) {
@@ -141,25 +166,44 @@
 
   const loadWorkflow = async () => {
     const id = savedSelect.value;
-    if (!id) return;
+    if (!id) {
+      currentWorkflowId = null;
+      currentVersionId = null;
+      currentWorkflowData = null;
+      populateVersions({ versions: [] }, null);
+      history.textContent = "Save or load a workflow to view its execution history.";
+      return;
+    }
     libraryStatus.textContent = "Loading workflow…";
     try {
       const response = await fetch("/api/workflows/" + encodeURIComponent(id));
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Could not load workflow.");
-      const workflow = payload.workflow;
-      if (!workflow.latest_version) throw new Error("This workflow has no saved version.");
-      currentWorkflowId = workflow.id;
-      currentVersionId = workflow.latest_version.id;
-      nodes = workflow.latest_version.definition;
-      document.getElementById("workflow-name").value = workflow.name;
+      currentWorkflowData = payload.workflow;
+      currentWorkflowId = currentWorkflowData.id;
+      const latest = currentWorkflowData.latest_version;
+      if (!latest) throw new Error("This workflow has no saved version.");
+      currentVersionId = latest.id;
+      nodes = latest.definition;
+      document.getElementById("workflow-name").value = currentWorkflowData.name;
+      populateVersions(currentWorkflowData, currentVersionId);
       render();
-      libraryStatus.textContent = "Loaded version " + workflow.latest_version.version_number + ".";
+      libraryStatus.textContent = "Loaded version " + latest.version_number + ".";
       await refreshHistory();
     } catch (error) {
       libraryStatus.textContent = error.message;
     }
   };
+
+  versionSelect.addEventListener("change", () => {
+    if (!currentWorkflowData || !versionSelect.value) return;
+    const selected = currentWorkflowData.versions.find(item => item.id === versionSelect.value);
+    if (!selected) return;
+    currentVersionId = selected.id;
+    nodes = selected.definition;
+    render();
+    libraryStatus.textContent = "Loaded version " + selected.version_number + ".";
+  });
 
   document.querySelectorAll("[data-add-node]").forEach(button => {
     button.addEventListener("click", () => {
@@ -232,5 +276,6 @@
   });
 
   render();
+  populateVersions({ versions: [] }, null);
   refreshLibrary();
 })();
