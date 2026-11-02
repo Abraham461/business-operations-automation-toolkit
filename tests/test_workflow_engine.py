@@ -228,6 +228,32 @@ class WorkflowEngineTests(unittest.TestCase):
             self.assertEqual(http_mock.call_args.args[1]["ai_summary"], "Customer requests an address update.")
             self.assertEqual(http_mock.call_args.args[1]["ai_key_details"], "Address update requested.")
 
+    def test_ai_action_joins_multiple_rows_with_newlines(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = os.path.join(folder, "ai_rows.csv")
+            with open(source_path, "w", newline="", encoding="utf-8") as source:
+                writer = csv.DictWriter(source, fieldnames=[
+                    "customer_name", "customer_id", "email", "plan", "description"
+                ])
+                writer.writeheader()
+                for number, text_value in enumerate(["First note", "Second note"], start=1):
+                    writer.writerow({
+                        "customer_name": f"Customer {number}", "customer_id": f"C00{number}",
+                        "email": f"customer{number}@example.com", "plan": "VIP",
+                        "description": text_value,
+                    })
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "ai_process", "field": "description"},
+                "execution_report",
+            ]
+            with patch("modules.workflow_engine.engine.process_document_text", return_value={
+                "mode": "demo", "summary": "Combined", "key_details": []
+            }) as ai_mock:
+                result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(ai_mock.call_args.args[0], "First note\\nSecond note")
+
     def test_ai_action_rejects_invalid_variable_names(self):
         with self.assertRaises(ValueError):
             validate_workflow([

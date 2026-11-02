@@ -451,8 +451,19 @@
           : type;
       let insertAt = reportIndex < 0 ? nodes.length : reportIndex;
       if (type === "map_fields" && mappingIndex >= 0) insertAt = mappingIndex;
+      const aiIndex = nodes.findIndex(node => typeOf(node) === "ai_process");
+      const httpIndex = nodes.findIndex(node => typeOf(node) === "http_request");
       if (type === "filter_rows") insertAt = conditionalIndex >= 0 ? conditionalIndex : pdfIndex >= 0 ? pdfIndex : insertAt;
       if (type === "conditional_branch" && pdfIndex >= 0) insertAt = pdfIndex;
+      if (type === "ai_process") {
+        const validationIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
+        const downstreamIndex = nodes.findIndex(node => ["filter_rows", "conditional_branch", "http_request", "generate_pdfs", "execution_report"].includes(typeOf(node)));
+        insertAt = downstreamIndex >= 0 ? downstreamIndex : validationIndex + 1;
+      }
+      if (type === "http_request") {
+        if (aiIndex >= 0) insertAt = aiIndex + 1;
+        else if (pdfIndex >= 0) insertAt = pdfIndex;
+      }
       nodes.splice(insertAt, 0, newNode);
       markDirty();
       result.textContent = "";

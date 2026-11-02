@@ -309,7 +309,8 @@ def run_workflow(nodes, csv_path, output_folder):
                         else "FALSE branch: no rows matched. PDF generation will be skipped."
                     )
                 elif action == "ai_process":
-                    field = str(node.get("field", "")).strip()
+                    config = node if isinstance(node, dict) else {}
+                    field = str(config.get("field", "")).strip()
                     if field not in context.get("headers", []):
                         raise ValueError(f"AI text column '{field}' is not present in the CSV.")
                     source_records = context.get("valid_records", context.get("records", []))
@@ -321,8 +322,8 @@ def run_workflow(nodes, csv_path, output_folder):
                     if not source_text:
                         raise ValueError(f"AI text column '{field}' contains no usable text.")
                     ai_result = process_document_text(source_text)
-                    summary_variable = node.get("output_variable", "ai_summary")
-                    details_variable = node.get("details_variable", "ai_key_details")
+                    summary_variable = config.get("output_variable", "ai_summary")
+                    details_variable = config.get("details_variable", "ai_key_details")
                     context["variables"][summary_variable] = ai_result.get("summary", "")
                     context["variables"][details_variable] = "\\n".join(
                         str(item) for item in ai_result.get("key_details", [])
