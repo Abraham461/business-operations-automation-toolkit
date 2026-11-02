@@ -207,7 +207,7 @@
     );
     const hint = document.createElement("small");
     hint.className = "http-editor-hint";
-    hint.textContent = "Use {{variable_name}} in later request fields. Hosts must be listed in OPSPILOT_HTTP_ALLOWED_HOSTS.";
+    hint.textContent = "Use {{variable_name}} in later request fields. Optionally store the full JSON response for a Parse JSON action. Hosts must be listed in OPSPILOT_HTTP_ALLOWED_HOSTS.";
     editor.append(hint);
     return editor;
   };
