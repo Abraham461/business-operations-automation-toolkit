@@ -1,27 +1,44 @@
 {% extends "base.html" %}
-{% block title %}Operations Toolkit{% endblock %}
+{% block title %}Overview{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
 {% block content %}
-<section class="hero p-4 p-md-5 rounded-4 mb-4">
-  <span class="badge text-bg-light mb-3">BUSINESS OPERATIONS AUTOMATION</span>
-  <h1 class="display-5 fw-bold">Less manual work.<br>More reliable operations.</h1>
-  <p class="lead col-lg-8">A practical toolkit for document generation, AI-assisted text processing and API checks.</p>
-  <p class="small opacity-75">Built with Python, Flask, ReportLab and Requests.</p>
+<section class="welcome-block">
+  <div>
+    <div class="eyebrow"><span class="eyebrow-line"></span> BUSINESS OPERATIONS, SIMPLIFIED</div>
+    <h1>Make room for <span>better work.</span></h1>
+    <p class="welcome-copy">A focused workspace for automating routine tasks, processing information and checking API behaviour.</p>
+  </div>
+  <div class="welcome-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-core"><i class="bi bi-lightning-charge-fill"></i></div><span class="art-node node-a"><i class="bi bi-file-earmark-check"></i></span><span class="art-node node-b"><i class="bi bi-stars"></i></span><span class="art-node node-c"><i class="bi bi-braces"></i></span></div>
 </section>
-<div class="row g-3">
-  <div class="col-md-4"><div class="card h-100"><div class="card-body">
-    <div class="icon">▤</div><h2 class="h5">Document automation</h2>
-    <p class="text-secondary">Turn a CSV customer list into individual PDF summaries.</p>
-    <a class="btn btn-outline-primary" href="/documents">Open module</a>
-  </div></div></div>
-  <div class="col-md-4"><div class="card h-100"><div class="card-body">
-    <div class="icon">✦</div><h2 class="h5">AI processing</h2>
-    <p class="text-secondary">Summarize a text document and extract useful details.</p>
-    <a class="btn btn-outline-primary" href="/ai">Open module</a>
-  </div></div></div>
-  <div class="col-md-4"><div class="card h-100"><div class="card-body">
-    <div class="icon">⌁</div><h2 class="h5">API testing</h2>
-    <p class="text-secondary">Send a request and check its HTTP status code.</p>
-    <a class="btn btn-outline-primary" href="/api-testing">Open module</a>
-  </div></div></div>
+<div class="section-heading"><div><div class="eyebrow">YOUR TOOLKIT</div><h2>Choose a workspace</h2><p>Three practical tools. One streamlined workflow.</p></div><span class="module-count">03 MODULES</span></div>
+<div class="row g-4 module-grid">
+  <div class="col-lg-4">
+    <article class="module-card h-100">
+      <div class="module-top"><span class="module-icon icon-blue"><i class="bi bi-file-earmark-pdf"></i></span><span class="module-index">01 / DOCUMENTS</span></div>
+      <h3>Document automation</h3><p>Convert structured CSV records into individual, ready-to-share PDF documents in one run.</p>
+      <div class="module-meta"><span><i class="bi bi-filetype-csv"></i> CSV input</span><span><i class="bi bi-filetype-pdf"></i> PDF output</span></div>
+      <a class="module-action" href="/documents">Open workspace <i class="bi bi-arrow-up-right"></i></a>
+    </article>
+  </div>
+  <div class="col-lg-4">
+    <article class="module-card h-100">
+      <div class="module-top"><span class="module-icon icon-violet"><i class="bi bi-stars"></i></span><span class="module-index">02 / INTELLIGENCE</span></div>
+      <h3>AI text processing</h3><p>Turn long-form text into concise summaries and structured key details with optional AI processing.</p>
+      <div class="module-meta"><span><i class="bi bi-file-earmark-text"></i> TXT input</span><span><i class="bi bi-magic"></i> AI-assisted</span></div>
+      <a class="module-action" href="/ai">Open workspace <i class="bi bi-arrow-up-right"></i></a>
+    </article>
+  </div>
+  <div class="col-lg-4">
+    <article class="module-card h-100">
+      <div class="module-top"><span class="module-icon icon-teal"><i class="bi bi-braces"></i></span><span class="module-index">03 / QUALITY</span></div>
+      <h3>API testing</h3><p>Send REST requests, inspect response payloads and compare HTTP status codes against expectations.</p>
+      <div class="module-meta"><span><i class="bi bi-arrow-left-right"></i> REST methods</span><span><i class="bi bi-check2-circle"></i> Status check</span></div>
+      <a class="module-action" href="/api-testing">Open workspace <i class="bi bi-arrow-up-right"></i></a>
+    </article>
+  </div>
 </div>
+<section class="bottom-strip">
+  <div class="strip-icon"><i class="bi bi-info-circle"></i></div>
+  <div><strong>Built for practical demonstrations</strong><p>This local portfolio app uses fictional sample data. Live AI processing requires an OpenRouter API key. Avoid uploading confidential or sensitive information.</p></div>
+</section>
 {% endblock %}
