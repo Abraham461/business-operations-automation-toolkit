@@ -64,7 +64,7 @@ You can now:
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
-Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
+Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only the rows that pass the filter. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
 
 HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
 

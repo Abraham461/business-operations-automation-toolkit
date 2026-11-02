@@ -311,7 +311,7 @@ def run_workflow(nodes, csv_path, output_folder):
                         raise ValueError("No valid rows are available for PDF generation.")
                     else:
                         source_path = csv_path
-                        if context["condition_evaluated"]:
+                        if context["condition_evaluated"] or context["filter_evaluated"]:
                             filtered_csv = _write_filtered_csv(
                                 source_records, context["headers"], output_folder
                             )

@@ -123,6 +123,23 @@ class WorkflowEngineTests(unittest.TestCase):
             self.assertEqual(result["status"], "success")
             self.assertIn("Kept 2 of 3 valid row(s)", result["steps"][3]["message"])
 
+    def test_filter_rows_limits_records_sent_to_pdf_generation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "VIP One", "customer_id": "C001", "email": "one@example.com", "plan": "VIP"},
+                {"customer_name": "Regular", "customer_id": "C002", "email": "two@example.com", "plan": "Standard"},
+                {"customer_name": "VIP Two", "customer_id": "C003", "email": "three@example.com", "plan": "VIP"},
+            ])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "filter_rows", "field": "plan", "operator": "equals", "value": "VIP"},
+                "generate_pdfs", "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(result["pdf_count"], 2)
+            self.assertEqual(result["steps"][4]["status"], "success")
+
     def test_filter_with_no_matches_skips_pdf_generation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
