@@ -222,7 +222,7 @@ class WorkflowEngineTests(unittest.TestCase):
                 result = run_workflow(nodes, source_path, folder)
             self.assertEqual(result["status"], "success")
             self.assertEqual(result["steps"][3]["status"], "success")
-            self.assertEqual(mocked.call_args.args[1], {})
+            self.assertEqual(mocked.call_args.args[1], {"access_token": "token-123"})
 
     def test_http_request_config_rejects_unsupported_method(self):
         with self.assertRaises(ValueError):
