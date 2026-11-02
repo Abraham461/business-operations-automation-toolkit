@@ -170,6 +170,8 @@ def validate_workflow(nodes):
     for node_type, node in zip(types, nodes):
         config = node if isinstance(node, dict) else {}
         if node_type == "set_variables":
+            if types.index(node_type) < types.index("validate_rows"):
+                raise ValueError("Set Variables must follow Validate rows.")
             values = config.get("values", {})
             if not isinstance(values, dict) or not values or len(values) > 20:
                 raise ValueError("Set Variables needs 1 to 20 variable assignments.")
@@ -179,6 +181,8 @@ def validate_workflow(nodes):
                 if not isinstance(value, str) or len(value) > 2000:
                     raise ValueError("Set Variables values must be text with at most 2,000 characters.")
         elif node_type == "parse_json":
+            if types.index(node_type) < types.index("validate_rows"):
+                raise ValueError("Parse JSON must follow Validate rows.")
             source_variable = config.get("source_variable", "")
             extract = config.get("extract", {})
             if not isinstance(source_variable, str) or not variable_pattern.fullmatch(source_variable):
@@ -222,6 +226,8 @@ def _read_json_path(payload, path):
             current = current[int(segment)]
         else:
             raise ValueError(f"JSON path '{path}' could not be found in the source value.")
+    if isinstance(current, (dict, list)) or current is None:
+        raise ValueError(f"JSON path '{path}' must resolve to a non-null scalar value.")
     return current
 
 

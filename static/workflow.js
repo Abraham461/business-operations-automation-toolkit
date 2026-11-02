@@ -504,7 +504,7 @@
   document.querySelectorAll("[data-add-node]").forEach(button => {
     button.addEventListener("click", () => {
       const type = button.dataset.addNode;
-      if (type !== "http_request" && nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
+      if (!["http_request", "set_variables", "parse_json"].includes(type) && nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
       const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
       const mappingIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
       const conditionalIndex = nodes.findIndex(node => typeOf(node) === "conditional_branch");
@@ -514,7 +514,7 @@
         : type === "http_request"
           ? { type, method: "GET", url: "https://api.example.com/resource", headers: { Accept: "application/json" }, body: null, extract: {} }
         : type === "set_variables"
-          ? { type, values: { api_base: "https://api.example.com", request_id: "{{customer_id}}" } }
+          ? { type, values: { source_system: "OpsPilot", workflow_label: "Customer document run" } }
         : type === "parse_json"
           ? { type, source_variable: "api_response", extract: { customer_id: "data.customer.id" } }
         : type === "ai_process"
@@ -533,21 +533,19 @@
         const downstreamIndex = nodes.findIndex(node => ["filter_rows", "conditional_branch", "http_request", "generate_pdfs", "execution_report"].includes(typeOf(node)));
         insertAt = downstreamIndex >= 0 ? downstreamIndex : validationIndex + 1;
       }
-      if (type === "set_variables") {
-        const validationIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
-        const downstreamIndex = nodes.findIndex(node => ["ai_process", "http_request", "parse_json", "generate_pdfs", "execution_report"].includes(typeOf(node)));
-        insertAt = downstreamIndex >= 0 ? downstreamIndex : validationIndex + 1;
-      }
-      if (type === "parse_json") {
-        const lastHttpIndex = nodes.reduce((found, node, i) => typeOf(node) === "http_request" ? i : found, -1);
+      const variableProducerTypes = ["set_variables", "ai_process", "http_request", "parse_json"];
+      if (type === "set_variables" || type === "parse_json" || type === "http_request") {
+        const lastProducerIndex = nodes.reduce(
+          (found, node, i) => variableProducerTypes.includes(typeOf(node)) ? i : found,
+          -1
+        );
+        const validationPosition = nodes.findIndex(node => typeOf(node) === "validate_rows");
         const pdfPosition = nodes.findIndex(node => typeOf(node) === "generate_pdfs");
-        insertAt = lastHttpIndex >= 0 ? lastHttpIndex + 1 : pdfPosition >= 0 ? pdfPosition : insertAt;
-      }
-      if (type === "http_request") {
-        const jsonIndex = nodes.findIndex(node => typeOf(node) === "parse_json");
-        if (jsonIndex >= 0) insertAt = jsonIndex + 1;
-        else if (aiIndex >= 0) insertAt = aiIndex + 1;
-        else if (pdfIndex >= 0) insertAt = pdfIndex;
+        const reportPosition = nodes.findIndex(node => typeOf(node) === "execution_report");
+        if (lastProducerIndex >= 0) insertAt = lastProducerIndex + 1;
+        else if (pdfPosition >= 0) insertAt = pdfPosition;
+        else if (reportPosition >= 0) insertAt = reportPosition;
+        else insertAt = validationPosition + 1;
       }
       nodes.splice(insertAt, 0, newNode);
       markDirty();

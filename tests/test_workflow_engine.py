@@ -206,14 +206,22 @@ class WorkflowEngineTests(unittest.TestCase):
                 "manual_trigger", "read_csv", "validate_rows",
                 {"type": "set_variables", "values": {
                     "api_base": "https://api.example.com",
-                    "customer_ref": "{{customer_id}}",
-                    "label": "Customer {{customer_name}}",
+                    "customer_ref": "C001",
                 }},
+                {"type": "set_variables", "values": {
+                    "endpoint": "{{api_base}}/customers/{{customer_ref}}",
+                }},
+                {"type": "http_request", "method": "GET", "url": "https://api.example.com/check"},
                 "execution_report",
             ]
-            result = run_workflow(nodes, source_path, folder)
+            with patch(
+                "modules.workflow_engine.engine.run_http_action",
+                return_value={"method": "GET", "status_code": 200, "variables": {}},
+            ) as http_mock:
+                result = run_workflow(nodes, source_path, folder)
             self.assertEqual(result["status"], "success")
-            self.assertIn("Set 3 workflow variable(s)", result["steps"][3]["message"])
+            self.assertIn("Set 1 workflow variable(s)", result["steps"][4]["message"])
+            self.assertEqual(http_mock.call_args.args[1]["endpoint"], "https://api.example.com/customers/C001")
 
     def test_set_variables_rejects_missing_reference(self):
         with tempfile.TemporaryDirectory() as folder:
