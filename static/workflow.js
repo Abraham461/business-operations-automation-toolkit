@@ -4,6 +4,7 @@
     read_csv: ["Read CSV", "Load uploaded records", "bi-filetype-csv", "data-node"],
     map_fields: ["Map fields", "Match source columns to customer fields", "bi-arrow-left-right", "map-node"],
     validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
+    filter_rows: ["Filter rows", "Keep records that match a rule", "bi-funnel", "filter-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
@@ -84,7 +85,7 @@
     return editor;
   };
 
-  const makeConditionEditor = (node, index) => {
+  const makeConditionEditor = (node, index, nodeType = "conditional_branch") => {
     const config = configOf(node);
     const editor = document.createElement("div");
     editor.className = "condition-editor";
@@ -115,7 +116,7 @@
     expected.setAttribute("aria-label", "Condition expected value");
     expected.maxLength = 200;
     const update = () => {
-      nodes[index] = { type: "conditional_branch", field: field.value.trim(), operator: operator.value, value: expected.value };
+      nodes[index] = { type: nodeType, field: field.value.trim(), operator: operator.value, value: expected.value };
       markDirty();
     };
     field.addEventListener("change", update);
@@ -151,9 +152,9 @@
         node.classList.add("workflow-node-mapping");
         node.append(makeMappingEditor(nodeData, index));
       }
-      if (type === "conditional_branch") {
+      if (type === "conditional_branch" || type === "filter_rows") {
         node.classList.add("workflow-node-conditional");
-        node.append(makeConditionEditor(nodeData, index));
+        node.append(makeConditionEditor(nodeData, index, type));
       }
       if (index > 0 && index < nodes.length - 1 && type !== "conditional_branch") {
         const remove = document.createElement("button");
@@ -164,7 +165,7 @@
         remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
-      if (type === "conditional_branch") {
+      if (type === "conditional_branch" || type === "filter_rows") {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "node-remove";
@@ -313,12 +314,17 @@
       if (nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
       const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
       const mappingIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
-      const newNode = type === "conditional_branch"
+      const conditionalIndex = nodes.findIndex(node => typeOf(node) === "conditional_branch");
+      const pdfIndex = nodes.findIndex(node => typeOf(node) === "generate_pdfs");
+      const newNode = type === "conditional_branch" || type === "filter_rows"
         ? { type, field: "plan", operator: "equals", value: "VIP" }
         : type === "map_fields"
           ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
           : type;
-      const insertAt = type === "map_fields" && mappingIndex >= 0 ? mappingIndex : reportIndex < 0 ? nodes.length : reportIndex;
+      let insertAt = reportIndex < 0 ? nodes.length : reportIndex;
+      if (type === "map_fields" && mappingIndex >= 0) insertAt = mappingIndex;
+      if (type === "filter_rows") insertAt = conditionalIndex >= 0 ? conditionalIndex : pdfIndex >= 0 ? pdfIndex : insertAt;
+      if (type === "conditional_branch" && pdfIndex >= 0) insertAt = pdfIndex;
       nodes.splice(insertAt, 0, newNode);
       markDirty();
       result.textContent = "";

@@ -10,6 +10,7 @@ ALLOWED_NODES = {
     "read_csv",
     "map_fields",
     "validate_rows",
+    "filter_rows",
     "conditional_branch",
     "generate_pdfs",
     "execution_report",
@@ -74,6 +75,26 @@ def validate_workflow(nodes):
         raise ValueError("Add Validate rows after Read CSV.")
     if "map_fields" in types and types.index("validate_rows") < types.index("map_fields"):
         raise ValueError("Validate rows must follow Map fields.")
+    if types.count("filter_rows") > 1:
+        raise ValueError("A workflow can contain only one Filter rows action in this MVP.")
+    if "filter_rows" in types:
+        filter_index = types.index("filter_rows")
+        if filter_index < types.index("validate_rows"):
+            raise ValueError("Filter rows must follow Validate rows.")
+        if "conditional_branch" in types and filter_index > types.index("conditional_branch"):
+            raise ValueError("Filter rows must come before Conditional branch.")
+        if "generate_pdfs" in types and filter_index > types.index("generate_pdfs"):
+            raise ValueError("Filter rows must come before Generate PDFs.")
+        config = nodes[filter_index] if isinstance(nodes[filter_index], dict) else {}
+        field = str(config.get("field", "")).strip()
+        operator = config.get("operator", "equals")
+        value = str(config.get("value", ""))
+        if not field or len(field) > 100:
+            raise ValueError("Choose a valid CSV column for the row filter.")
+        if operator not in CONDITION_OPERATORS:
+            raise ValueError("Choose a supported row filter operator.")
+        if len(value) > 200:
+            raise ValueError("Filter values must be 200 characters or fewer.")
     if types.count("conditional_branch") > 1:
         raise ValueError("A workflow can contain only one Conditional branch in this MVP.")
     if "conditional_branch" in types:
@@ -201,6 +222,23 @@ def run_workflow(nodes, csv_path, output_folder):
                     context["valid_records"] = valid
                     step["message"] = (
                         f"Validated {len(valid)} of {len(context['records'])} row(s)."
+                    )
+                elif action == "filter_rows":
+                    config = _condition_config(node)
+                    field = str(config.get("field", "")).strip()
+                    if field not in context.get("headers", []):
+                        raise ValueError(f"Filter column '{field}' is not present in the CSV.")
+                    operator = config.get("operator", "equals")
+                    expected = str(config.get("value", ""))
+                    source_records = context.get("valid_records", [])
+                    filtered = [
+                        row for row in source_records
+                        if _matches(row.get(field), operator, expected)
+                    ]
+                    context["valid_records"] = filtered
+                    step["message"] = (
+                        f"Kept {len(filtered)} of {len(source_records)} valid row(s) "
+                        f"where {field} {operator.replace('_', ' ')} '{expected}'."
                     )
                 elif action == "conditional_branch":
                     config = _condition_config(node)

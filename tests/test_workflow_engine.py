@@ -106,6 +106,59 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+    def test_filter_rows_keeps_only_matching_valid_records(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "VIP One", "customer_id": "C001", "email": "one@example.com", "plan": "VIP"},
+                {"customer_name": "Regular", "customer_id": "C002", "email": "two@example.com", "plan": "Standard"},
+                {"customer_name": "VIP Two", "customer_id": "C003", "email": "three@example.com", "plan": "VIP"},
+            ])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "filter_rows", "field": "plan", "operator": "equals", "value": "VIP"},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Kept 2 of 3 valid row(s)", result["steps"][3]["message"])
+
+    def test_filter_rows_supports_contains_and_numeric_comparisons(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = os.path.join(folder, "amounts.csv")
+            with open(source_path, "w", newline="", encoding="utf-8") as source:
+                writer = csv.DictWriter(source, fieldnames=[
+                    "customer_name", "customer_id", "email", "plan", "amount"
+                ])
+                writer.writeheader()
+                writer.writerows([
+                    {"customer_name": "A", "customer_id": "1", "email": "a@example.com", "plan": "VIP", "amount": "250"},
+                    {"customer_name": "B", "customer_id": "2", "email": "b@example.com", "plan": "Standard", "amount": "80"},
+                ])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "filter_rows", "field": "amount", "operator": "greater_than", "value": "100"},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Kept 1 of 2 valid row(s)", result["steps"][3]["message"])
+
+    def test_rejects_filter_before_validation(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "filter_rows", "field": "plan", "operator": "equals", "value": "VIP"},
+                "validate_rows", "execution_report",
+            ])
+
+    def test_rejects_filter_with_unsupported_operator(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "filter_rows", "field": "plan", "operator": "python", "value": "VIP"},
+                "execution_report",
+            ])
+
     def test_runs_sequential_csv_validation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
