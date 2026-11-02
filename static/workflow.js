@@ -156,7 +156,7 @@
         node.classList.add("workflow-node-conditional");
         node.append(makeConditionEditor(nodeData, index, type));
       }
-      if (index > 0 && index < nodes.length - 1 && type !== "conditional_branch") {
+      if (index > 0 && index < nodes.length - 1 && type !== "conditional_branch" && type !== "filter_rows") {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "node-remove";

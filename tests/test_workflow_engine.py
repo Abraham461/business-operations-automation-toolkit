@@ -122,6 +122,24 @@ class WorkflowEngineTests(unittest.TestCase):
             self.assertEqual(result["status"], "success")
             self.assertIn("Kept 2 of 3 valid row(s)", result["steps"][3]["message"])
 
+    def test_filter_with_no_matches_skips_pdf_generation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Regular",
+                "customer_id": "C001",
+                "email": "regular@example.com",
+                "plan": "Standard",
+            }])
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "filter_rows", "field": "plan", "operator": "equals", "value": "VIP"},
+                "generate_pdfs", "execution_report",
+            ]
+            result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(result["steps"][4]["status"], "skipped")
+            self.assertIsNone(result["archive"])
+
     def test_filter_rows_supports_contains_and_numeric_comparisons(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = os.path.join(folder, "amounts.csv")

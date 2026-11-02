@@ -169,7 +169,7 @@ def _write_filtered_csv(records, headers, folder):
 def run_workflow(nodes, csv_path, output_folder):
     types = validate_workflow(nodes)
     started = datetime.now(timezone.utc).isoformat()
-    context = {"records": [], "pdf_count": 0, "condition_evaluated": False}
+    context = {"records": [], "pdf_count": 0, "condition_evaluated": False, "filter_evaluated": False}
     steps = []
     filtered_csv = None
 
@@ -236,6 +236,7 @@ def run_workflow(nodes, csv_path, output_folder):
                         if _matches(row.get(field), operator, expected)
                     ]
                     context["valid_records"] = filtered
+                    context["filter_evaluated"] = True
                     step["message"] = (
                         f"Kept {len(filtered)} of {len(source_records)} valid row(s) "
                         f"where {field} {operator.replace('_', ' ')} '{expected}'."
@@ -270,6 +271,9 @@ def run_workflow(nodes, csv_path, output_folder):
                     if context["condition_evaluated"] and not context.get("branch_matched"):
                         step["status"] = "skipped"
                         step["message"] = "Skipped because the condition evaluated to FALSE."
+                    elif not source_records and context["filter_evaluated"]:
+                        step["status"] = "skipped"
+                        step["message"] = "Skipped because the row filter returned no matching records."
                     elif not source_records:
                         raise ValueError("No valid rows are available for PDF generation.")
                     else:
