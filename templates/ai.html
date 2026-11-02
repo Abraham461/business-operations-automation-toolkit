@@ -1,21 +1,40 @@
 {% extends "base.html" %}
-{% block title %}AI Document Processing{% endblock %}
+{% block title %}AI text processing{% endblock %}
+{% block breadcrumb %}AI processing{% endblock %}
 {% block content %}
-<h1 class="h2 mb-2">AI document processing</h1>
-<p class="text-secondary">Upload a plain-text sample document for summarization. Live OpenRouter processing is optional.</p>
-<div class="card mb-3"><div class="card-body">
-  <form method="post" action="/ai/process" enctype="multipart/form-data">
-    <input class="form-control mb-3" type="file" name="file" accept=".txt" required>
-    <button class="btn btn-primary">Process document</button>
-  </form>
-  <a href="/static/sample_document.txt" download class="d-inline-block mt-3">Download sample document</a>
-</div></div>
-{% if result %}
-<div class="card"><div class="card-body">
-  <span class="badge text-bg-secondary">{{ result.mode }} mode</span>
-  <h2 class="h5 mt-3">Summary / output</h2>
-  <pre class="result">{{ result.summary }}</pre>
-  {% if result.key_details %}<h3 class="h6">Key details</h3><ul>{% for item in result.key_details %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
-</div></div>
-{% endif %}
+<div class="page-intro">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE 02</div><h1>AI text processing</h1><p>Extract the signal from long-form text with concise summaries and key details.</p></div>
+  <span class="page-icon icon-violet"><i class="bi bi-stars"></i></span>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <section class="surface-card">
+      <div class="card-heading"><div><span class="card-kicker">SOURCE DOCUMENT</span><h2>Upload a text file</h2><p>Start with a plain-text document to generate an overview.</p></div><span class="step-number">01</span></div>
+      <form method="post" action="/ai/process" enctype="multipart/form-data">
+        <label class="form-label" for="ai-file">Text document</label>
+        <div class="upload-panel compact-upload"><i class="bi bi-file-earmark-text upload-symbol"></i><strong>Choose a TXT file</strong><span>Plain text only · Maximum upload size 12 MB</span><input id="ai-file" class="form-control upload-input" type="file" name="file" accept=".txt" required></div>
+        <button class="btn btn-primary app-primary-btn w-100 mt-4" type="submit"><i class="bi bi-stars me-2"></i>Process document <i class="bi bi-arrow-right ms-2"></i></button>
+      </form>
+    </section>
+    <aside class="info-card mt-4">
+      <span class="info-icon violet-info"><i class="bi bi-cpu"></i></span><h3>Processing modes</h3><p>Demo mode works without an API key. Live AI processing is available when OpenRouter is configured.</p>
+      <a class="text-link" href="/static/sample_document.txt" download>Download sample text <i class="bi bi-download"></i></a>
+    </aside>
+  </div>
+  <div class="col-lg-7">
+    {% if result %}
+    <section class="surface-card output-card">
+      <div class="output-header"><div><span class="card-kicker">PROCESSED OUTPUT</span><h2>Document insights</h2></div><span class="mode-pill">{{ result.mode }} mode</span></div>
+      <h3 class="output-label"><i class="bi bi-card-text"></i> Summary</h3><pre class="result">{{ result.summary }}</pre>
+      {% if result.key_details %}<h3 class="output-label mt-4"><i class="bi bi-list-check"></i> Key details</h3><ul class="detail-list">{% for item in result.key_details %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+    </section>
+    {% else %}
+    <section class="empty-output">
+      <div class="empty-illustration"><span><i class="bi bi-stars"></i></span><i class="bi bi-file-earmark-text float-file"></i><i class="bi bi-chat-square-text float-chat"></i></div>
+      <h3>Your insights will appear here</h3><p>Upload a TXT file to see its summary and extracted key details. The output will be displayed in this panel.</p>
+      <span class="empty-caption"><i class="bi bi-lock"></i> Demo uses sample text only unless live AI is configured</span>
+    </section>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
