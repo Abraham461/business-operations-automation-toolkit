@@ -142,6 +142,7 @@ def validate_workflow(nodes):
             raise ValueError("AI details variable must use letters, numbers and underscores.")
         if output_variable == details_variable:
             raise ValueError("AI summary and details must use different variable names.")
+    variable_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     for node_type, node in zip(types, nodes):
         if node_type == "http_request":
             config = node if isinstance(node, dict) else {}
@@ -172,7 +173,6 @@ def validate_workflow(nodes):
                 if not isinstance(path, str) or not path.strip() or len(path) > 200:
                     raise ValueError("Each response variable needs a valid JSON path.")
 
-    variable_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     for node_type, node in zip(types, nodes):
         config = node if isinstance(node, dict) else {}
         if node_type == "set_variables":
