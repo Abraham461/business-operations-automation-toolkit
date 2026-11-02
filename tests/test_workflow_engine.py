@@ -257,6 +257,32 @@ class WorkflowEngineTests(unittest.TestCase):
             self.assertEqual(result["status"], "success")
             self.assertIn("Parsed JSON and created 2", result["steps"][4]["message"])
 
+
+    def test_http_response_can_be_parsed_by_a_later_action(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample", "customer_id": "C001",
+                "email": "sample@example.com", "plan": "VIP",
+            }])
+            response_payload = {"data": {"customer": {"id": "C900"}}}
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "http_request", "method": "GET",
+                 "url": "https://api.example.com/customer",
+                 "response_variable": "api_response"},
+                {"type": "parse_json", "source_variable": "api_response",
+                 "extract": {"external_customer_id": "data.customer.id"}},
+                "execution_report",
+            ]
+            with patch(
+                "modules.workflow_engine.engine.run_http_action",
+                return_value={"method": "GET", "status_code": 200,
+                              "variables": {}, "response": response_payload},
+            ):
+                result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Parsed JSON and created 1", result["steps"][4]["message"])
+
     def test_parse_json_rejects_invalid_source(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{

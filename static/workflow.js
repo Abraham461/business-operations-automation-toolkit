@@ -168,6 +168,11 @@
     body.rows = 3;
     body.placeholder = '{"customer_id":"{{customer_id}}"}';
     body.value = config.body ? JSON.stringify(config.body, null, 2) : "";
+    const responseVariable = document.createElement("input");
+    responseVariable.className = "form-control form-control-sm";
+    responseVariable.value = config.response_variable || "";
+    responseVariable.placeholder = "api_response";
+    responseVariable.maxLength = 64;
     const extract = document.createElement("textarea");
     extract.className = "form-control form-control-sm";
     extract.rows = 2;
@@ -186,16 +191,18 @@
         url: url.value.trim(),
         headers: parsedHeaders,
         body: parsedBody,
+        response_variable: responseVariable.value.trim(),
         extract: parsedExtract
       };
       markDirty();
     };
-    [method, url, headers, body, extract].forEach(control => control.addEventListener("change", update));
+    [method, url, headers, body, responseVariable, extract].forEach(control => control.addEventListener("change", update));
     editor.append(
       makeLabel("Method", method),
       makeLabel("HTTPS URL", url),
       makeLabel("Headers (JSON)", headers),
       makeLabel("JSON request body (optional)", body),
+      makeLabel("Store full JSON response as variable (optional)", responseVariable),
       makeLabel("Response JSON paths → workflow variables", extract)
     );
     const hint = document.createElement("small");

@@ -151,6 +151,12 @@ def validate_workflow(nodes):
                 raise ValueError("HTTP Request has an unsupported method.")
             if not url or len(url) > 2048:
                 raise ValueError("HTTP Request needs a valid URL (maximum 2,048 characters).")
+            response_variable = config.get("response_variable", "")
+            if response_variable and (
+                not isinstance(response_variable, str)
+                or not variable_pattern.fullmatch(response_variable)
+            ):
+                raise ValueError("HTTP response variable must start with a letter and use only letters, numbers and underscores.")
             headers = config.get("headers", {})
             if not isinstance(headers, dict) or len(headers) > 20:
                 raise ValueError("HTTP Request headers must be an object with at most 20 entries.")
@@ -423,6 +429,13 @@ def run_workflow(nodes, csv_path, output_folder):
                 elif action == "http_request":
                     request_result = run_http_action(node, context["variables"])
                     context["variables"].update(request_result["variables"])
+                    response_variable = node.get("response_variable", "") if isinstance(node, dict) else ""
+                    if response_variable:
+                        if request_result.get("response") is None:
+                            raise ValueError("The HTTP response variable requires a valid JSON response.")
+                        context["variables"][response_variable] = json.dumps(
+                            request_result["response"], ensure_ascii=False
+                        )
                     step["message"] = (
                         f"{request_result['method']} request completed with HTTP "
                         f"{request_result['status_code']}; extracted "

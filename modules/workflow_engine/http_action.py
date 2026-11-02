@@ -152,6 +152,7 @@ def run_http_action(config, variables=None):
             "method": method,
             "status_code": response.status_code,
             "variables": extracted,
+            "response": response_payload,
         }
     except requests.Timeout as exc:
         raise ValueError("HTTP request timed out after 10 seconds.") from exc

@@ -59,7 +59,7 @@ You can now:
 - Review recent execution history for each saved workflow.
 - Map differently named source CSV columns to the required customer fields before validation.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
-- Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts.
+- Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts. Optionally store the complete JSON response as a variable for the Parse JSON action.
 - Create or update reusable text variables with the Set Variables action. Values can reference earlier variables with `{{variable_name}}`.
 - Parse JSON stored in a workflow variable and extract nested object or array values into named variables using dot paths such as `data.items.0.id`.
 - Summarize a selected CSV text column using the existing OpenRouter integration; pass the summary and key details to later actions as variables. Without an API key, the existing labelled demo mode is used.
@@ -71,7 +71,7 @@ Filter and condition operators: equals, does not equal, contains, greater than, 
 
 AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
 
-HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
+HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They can optionally store the complete JSON response in a named variable, which can then be passed to Parse JSON for nested extraction. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
 
 The database is created automatically at `instance/opspilot.sqlite3` on first launch. Set `OPSPILOT_DATABASE` in `.env` to use another local database path. Existing workflow files are not migrated because the earlier MVP did not persist them.
 

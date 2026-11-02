@@ -47,6 +47,7 @@ class HttpWorkflowActionTests(unittest.TestCase):
             "extract": {"access_token": "data.token"},
         })
         self.assertEqual(result["variables"], {"access_token": "abc123"})
+        self.assertEqual(result["response"], {"data": {"token": "abc123"}})
         self.assertFalse(session.trust_env)
         self.assertFalse(session.request.call_args.kwargs["allow_redirects"])
         response.close.assert_called_once()
