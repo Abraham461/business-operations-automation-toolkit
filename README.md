@@ -6,8 +6,9 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 
 ## What it demonstrates
 
-| Module | What it does | Current MVP scope |
+| Workspace | What it does | Current MVP scope |
 |---|---|---|
+| **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → row validation → PDF generation → execution report |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
 | **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
@@ -45,6 +46,10 @@ If PowerShell blocks virtual-environment activation, run this in the same PowerS
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
+
+## Workflow Builder (first release)
+
+Open **Workflow Builder** to assemble the customer-document pipeline. Actions execute sequentially and the runner validates the workflow structure before processing the uploaded CSV. The first release supports a manual trigger, CSV reading, required-column/row validation, PDF generation and an execution summary. It is an early foundation: workflows are not yet saved to a database, and branching, scheduling, retries and background execution are not implemented.
 
 ## Try the sample workflows
 
@@ -121,11 +126,12 @@ These tests cover document generation, basic API runner behavior and AI demo mod
 
 ## Roadmap
 
-1. Complete Windows end-to-end testing and add screenshots.
-2. Improve API testing with configurable response extraction, variable chaining and assertions.
-3. Add PDF/image OCR with upload validation.
-4. Add configurable document templates and downloadable reports.
-5. Add authentication, request allowlists, rate limits and deployment hardening before considering public hosting.
+1. Persist workflow definitions, versions and execution history.
+2. Add branching, reusable node configuration and workflow validation feedback.
+3. Expand the action catalogue with field mapping, filters, HTTP requests and AI tasks.
+4. Improve API testing with configurable response extraction, variable chaining and assertions.
+5. Add scheduling, background execution, retries and monitoring.
+6. Add authentication, request allowlists, rate limits and deployment hardening before considering public hosting.
 
 ## Portfolio note
 

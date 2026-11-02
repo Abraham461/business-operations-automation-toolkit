@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Workflow Builder{% endblock %}
+{% block breadcrumb %}Workflow Builder{% endblock %}
+{% block content %}
+<div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> AUTOMATION STUDIO</div><h1>Workflow Builder</h1><p>Connect practical actions into one repeatable business process.</p></div><span class="page-icon icon-violet"><i class="bi bi-diagram-3"></i></span></div>
+<div class="workflow-layout">
+  <aside class="surface-card workflow-palette">
+    <div class="card-heading"><div><span class="card-kicker">ACTION LIBRARY</span><h2>Add an action</h2><p>Build your process from top to bottom.</p></div></div>
+    <div class="action-option"><span class="workflow-node-icon trigger-node"><i class="bi bi-play-circle"></i></span><div><strong>Manual trigger</strong><small>Start the workflow</small></div><button type="button" disabled>+</button></div>
+    <div class="action-option"><span class="workflow-node-icon data-node"><i class="bi bi-filetype-csv"></i></span><div><strong>Read CSV</strong><small>Load uploaded records</small></div><button type="button" data-add-node="read_csv">+</button></div>
+    <div class="action-option"><span class="workflow-node-icon validate-node"><i class="bi bi-check2-square"></i></span><div><strong>Validate rows</strong><small>Check required fields</small></div><button type="button" data-add-node="validate_rows">+</button></div>
+    <div class="action-option"><span class="workflow-node-icon document-node"><i class="bi bi-file-earmark-pdf"></i></span><div><strong>Generate PDFs</strong><small>Create customer documents</small></div><button type="button" data-add-node="generate_pdfs">+</button></div>
+    <div class="action-option"><span class="workflow-node-icon report-node"><i class="bi bi-clipboard-data"></i></span><div><strong>Execution report</strong><small>Summarize the run</small></div><button type="button" disabled>+</button></div>
+    <p class="workflow-hint"><i class="bi bi-info-circle"></i> This first release runs a controlled sequential workflow. Branching and more actions come later.</p>
+  </aside>
+  <section class="surface-card workflow-canvas">
+    <div class="workflow-canvas-head"><div><span class="card-kicker">WORKFLOW CANVAS</span><h2>Customer document pipeline</h2><p>Actions execute in the order shown.</p></div><button type="button" class="btn btn-light btn-sm" id="reset-workflow"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</button></div>
+    <div id="workflow-nodes" class="workflow-nodes" aria-live="polite"></div>
+    <div class="workflow-run-panel"><label for="workflow-file" class="form-label">Input CSV file</label><input id="workflow-file" class="form-control" type="file" accept=".csv" required><div class="workflow-run-actions"><span><i class="bi bi-shield-check"></i> Fictional sample data only</span><button type="button" id="run-workflow" class="btn btn-primary app-primary-btn"><i class="bi bi-play-fill me-1"></i> Run workflow</button></div><div id="workflow-result" class="workflow-result" role="status" aria-live="polite"></div></div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='workflow.js') }}"></script>
+{% endblock %}

@@ -24,7 +24,8 @@
     <div class="sidebar-label">WORKSPACE</div>
     <nav class="side-nav" aria-label="Main navigation">
       <a class="side-link {{ 'active' if request.endpoint == 'index' else '' }}" href="/" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}><i class="bi bi-grid-1x2" aria-hidden="true"></i><span>Overview</span></a>
-      <a class="side-link {{ 'active' if request.endpoint in ['documents','documents_generate'] else '' }}" href="/documents" {% if request.endpoint in ['documents','documents_generate'] %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span>Document automation</span></a>
+      <a class="side-link {{ 'active' if request.endpoint in ['documents','documents_generate'] else '' }}" <a class="side-link" href="/workflows"><i class="bi bi-diagram-3" aria-hidden="true"></i><span>Workflow Builder</span></a>
+      href="/documents" {% if request.endpoint in ['documents','documents_generate'] %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span>Document automation</span></a>
       <a class="side-link {{ 'active' if request.endpoint in ['ai','ai_process'] else '' }}" href="/ai" {% if request.endpoint in ['ai','ai_process'] %}aria-current="page"{% endif %}><i class="bi bi-stars" aria-hidden="true"></i><span>AI processing</span><span class="nav-tag">AI</span></a>
       <a class="side-link {{ 'active' if request.endpoint in ['api_testing','api_testing_run'] else '' }}" href="/api-testing" {% if request.endpoint in ['api_testing','api_testing_run'] %}aria-current="page"{% endif %}><i class="bi bi-braces" aria-hidden="true"></i><span>API testing</span></a>
     </nav>
