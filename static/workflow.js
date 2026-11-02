@@ -6,6 +6,7 @@
     validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
     filter_rows: ["Filter rows", "Keep records that match a rule", "bi-funnel", "filter-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
+    http_request: ["HTTP Request", "Call an approved HTTPS endpoint", "bi-globe", "http-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
   };
@@ -126,6 +127,81 @@
     return editor;
   };
 
+
+  const makeHttpEditor = (node, index) => {
+    const config = configOf(node);
+    const editor = document.createElement("div");
+    editor.className = "http-editor";
+    const makeLabel = (caption, control) => {
+      const label = document.createElement("label");
+      label.className = "http-field";
+      const title = document.createElement("span");
+      title.textContent = caption;
+      label.append(title, control);
+      return label;
+    };
+    const method = document.createElement("select");
+    method.className = "form-select form-select-sm";
+    ["GET", "POST", "PUT", "PATCH", "DELETE"].forEach(value => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      method.append(option);
+    });
+    method.value = config.method || "GET";
+    const url = document.createElement("input");
+    url.className = "form-control form-control-sm";
+    url.type = "url";
+    url.placeholder = "https://api.example.com/resource";
+    url.value = config.url || "";
+    url.maxLength = 2048;
+    const headers = document.createElement("textarea");
+    headers.className = "form-control form-control-sm";
+    headers.rows = 2;
+    headers.placeholder = '{"Accept":"application/json"}';
+    headers.value = JSON.stringify(config.headers || {}, null, 2);
+    const body = document.createElement("textarea");
+    body.className = "form-control form-control-sm";
+    body.rows = 3;
+    body.placeholder = '{"customer_id":"{{customer_id}}"}';
+    body.value = config.body ? JSON.stringify(config.body, null, 2) : "";
+    const extract = document.createElement("textarea");
+    extract.className = "form-control form-control-sm";
+    extract.rows = 2;
+    extract.placeholder = '{"access_token":"access_token","customer_id":"data.id"}';
+    extract.value = JSON.stringify(config.extract || {}, null, 2);
+    const update = () => {
+      let parsedHeaders = {};
+      let parsedBody = null;
+      let parsedExtract = {};
+      try { parsedHeaders = headers.value.trim() ? JSON.parse(headers.value) : {}; } catch (_error) { parsedHeaders = config.headers || {}; }
+      try { parsedBody = body.value.trim() ? JSON.parse(body.value) : null; } catch (_error) { parsedBody = config.body || null; }
+      try { parsedExtract = extract.value.trim() ? JSON.parse(extract.value) : {}; } catch (_error) { parsedExtract = config.extract || {}; }
+      nodes[index] = {
+        type: "http_request",
+        method: method.value,
+        url: url.value.trim(),
+        headers: parsedHeaders,
+        body: parsedBody,
+        extract: parsedExtract
+      };
+      markDirty();
+    };
+    [method, url, headers, body, extract].forEach(control => control.addEventListener("change", update));
+    editor.append(
+      makeLabel("Method", method),
+      makeLabel("HTTPS URL", url),
+      makeLabel("Headers (JSON)", headers),
+      makeLabel("JSON request body (optional)", body),
+      makeLabel("Response JSON paths → workflow variables", extract)
+    );
+    const hint = document.createElement("small");
+    hint.className = "http-editor-hint";
+    hint.textContent = "Use {{variable_name}} in later request fields. Hosts must be listed in OPSPILOT_HTTP_ALLOWED_HOSTS.";
+    editor.append(hint);
+    return editor;
+  };
+
   const render = () => {
     list.replaceChildren();
     nodes.forEach((nodeData, index) => {
@@ -148,6 +224,10 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
+      if (type === "http_request") {
+        node.classList.add("workflow-node-http");
+        node.append(makeHttpEditor(nodeData, index));
+      }
       if (type === "map_fields") {
         node.classList.add("workflow-node-mapping");
         node.append(makeMappingEditor(nodeData, index));
@@ -318,6 +398,8 @@
       const pdfIndex = nodes.findIndex(node => typeOf(node) === "generate_pdfs");
       const newNode = type === "conditional_branch" || type === "filter_rows"
         ? { type, field: "plan", operator: "equals", value: "VIP" }
+        : type === "http_request"
+          ? { type, method: "GET", url: "https://api.example.com/resource", headers: { Accept: "application/json" }, body: null, extract: {} }
         : type === "map_fields"
           ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
           : type;

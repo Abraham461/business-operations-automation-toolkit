@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from modules.workflow_engine.engine import run_workflow, validate_workflow
+from unittest.mock import patch
 
 
 class WorkflowEngineTests(unittest.TestCase):
@@ -174,6 +175,43 @@ class WorkflowEngineTests(unittest.TestCase):
             validate_workflow([
                 "manual_trigger", "read_csv", "validate_rows",
                 {"type": "filter_rows", "field": "plan", "operator": "python", "value": "VIP"},
+                "execution_report",
+            ])
+
+    def test_http_request_action_chains_extracted_variables(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [{
+                "customer_name": "Sample",
+                "customer_id": "C001",
+                "email": "sample@example.com",
+                "plan": "VIP",
+            }])
+            fake_result = {
+                "method": "GET",
+                "status_code": 200,
+                "variables": {"access_token": "token-123"},
+            }
+            nodes = [
+                "manual_trigger", "read_csv", "validate_rows",
+                {
+                    "type": "http_request",
+                    "method": "GET",
+                    "url": "https://api.example.com/auth",
+                    "extract": {"access_token": "access_token"},
+                },
+                "execution_report",
+            ]
+            with patch("modules.workflow_engine.engine.run_http_action", return_value=fake_result) as mocked:
+                result = run_workflow(nodes, source_path, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(result["steps"][3]["status"], "success")
+            self.assertEqual(mocked.call_args.args[1], {})
+
+    def test_http_request_config_rejects_unsupported_method(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "http_request", "method": "TRACE", "url": "https://api.example.com"},
                 "execution_report",
             ])
 

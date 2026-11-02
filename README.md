@@ -59,11 +59,14 @@ You can now:
 - Review recent execution history for each saved workflow.
 - Map differently named source CSV columns to the required customer fields before validation.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
+- Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts.
 - Optionally configure one conditional row branch using a CSV column and an operator.
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
 Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
+
+HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
 
 The database is created automatically at `instance/opspilot.sqlite3` on first launch. Set `OPSPILOT_DATABASE` in `.env` to use another local database path. Existing workflow files are not migrated because the earlier MVP did not persist them.
 
@@ -112,7 +115,7 @@ After installing dependencies:
 python -m unittest discover -s tests -v
 ```
 
-These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering and conditional row routing. They do **not** replace a full browser-based test of the Flask application.
+These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering, conditional row routing and HTTP action configuration/variable chaining. They do **not** replace a full browser-based test of the Flask application.
 
 ## Project structure
 
@@ -149,7 +152,7 @@ These tests cover document generation, basic API runner behavior, AI demo mode, 
 
 1. **Completed:** persist workflow definitions, versions and execution history locally.
 2. **Completed in this branch:** configurable field mapping, row filtering and one conditional row branch.
-3. Add HTTP request and AI processing actions to the workflow catalogue.
+3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining. Add AI processing actions to the workflow catalogue.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
 5. Add scheduling, background execution, retries and monitoring.
 6. Add authentication, CSRF protection, request allowlists, rate limits and deployment hardening before considering public hosting.

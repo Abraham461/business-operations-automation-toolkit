@@ -4,6 +4,7 @@ import tempfile
 from datetime import datetime, timezone
 
 from modules.document_automation.generator import generate_customer_pdfs
+from modules.workflow_engine.http_action import run_http_action
 
 ALLOWED_NODES = {
     "manual_trigger",
@@ -12,6 +13,7 @@ ALLOWED_NODES = {
     "validate_rows",
     "filter_rows",
     "conditional_branch",
+    "http_request",
     "generate_pdfs",
     "execution_report",
 }
@@ -115,6 +117,29 @@ def validate_workflow(nodes):
     if "generate_pdfs" in types and "conditional_branch" in types:
         if types.index("generate_pdfs") < types.index("conditional_branch"):
             raise ValueError("Generate PDFs must follow Conditional branch.")
+    for node_type, node in zip(types, nodes):
+        if node_type == "http_request":
+            config = node if isinstance(node, dict) else {}
+            method = str(config.get("method", "GET")).upper()
+            url = str(config.get("url", "")).strip()
+            if method not in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
+                raise ValueError("HTTP Request has an unsupported method.")
+            if not url or len(url) > 2048:
+                raise ValueError("HTTP Request needs a valid URL (maximum 2,048 characters).")
+            headers = config.get("headers", {})
+            if not isinstance(headers, dict) or len(headers) > 20:
+                raise ValueError("HTTP Request headers must be an object with at most 20 entries.")
+            body = config.get("body")
+            if body is not None and len(str(body)) > 100000:
+                raise ValueError("HTTP Request body is too large.")
+            extract = config.get("extract", {})
+            if not isinstance(extract, dict) or len(extract) > 20:
+                raise ValueError("Response extraction must be an object with at most 20 variables.")
+            for variable, path in extract.items():
+                if not isinstance(variable, str) or not variable.replace("_", "a").isalnum() or not variable[0].isalpha():
+                    raise ValueError("Response variable names must use letters, numbers and underscores.")
+                if not isinstance(path, str) or not path.strip() or len(path) > 200:
+                    raise ValueError("Each response variable needs a valid JSON path.")
     if types[-1] != "execution_report":
         raise ValueError("The final action must be Execution report.")
     if types.count("execution_report") != 1:
@@ -169,7 +194,7 @@ def _write_filtered_csv(records, headers, folder):
 def run_workflow(nodes, csv_path, output_folder):
     types = validate_workflow(nodes)
     started = datetime.now(timezone.utc).isoformat()
-    context = {"records": [], "pdf_count": 0, "condition_evaluated": False, "filter_evaluated": False}
+    context = {"records": [], "pdf_count": 0, "condition_evaluated": False, "filter_evaluated": False, "variables": {}}
     steps = []
     filtered_csv = None
 
@@ -261,6 +286,14 @@ def run_workflow(nodes, csv_path, output_folder):
                         f"TRUE branch: {len(matched)} row(s) matched."
                         if matched
                         else "FALSE branch: no rows matched. PDF generation will be skipped."
+                    )
+                elif action == "http_request":
+                    request_result = run_http_action(node, context["variables"])
+                    context["variables"].update(request_result["variables"])
+                    step["message"] = (
+                        f"{request_result['method']} request completed with HTTP "
+                        f"{request_result['status_code']}; extracted "
+                        f"{len(request_result['variables'])} variable(s)."
                     )
                 elif action == "generate_pdfs":
                     source_records = (
