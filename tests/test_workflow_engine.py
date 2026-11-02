@@ -252,7 +252,7 @@ class WorkflowEngineTests(unittest.TestCase):
             }) as ai_mock:
                 result = run_workflow(nodes, source_path, folder)
             self.assertEqual(result["status"], "success")
-            self.assertEqual(ai_mock.call_args.args[0], "First note\\nSecond note")
+            self.assertEqual(ai_mock.call_args.args[0], "First note\nSecond note")
 
     def test_ai_action_rejects_invalid_variable_names(self):
         with self.assertRaises(ValueError):

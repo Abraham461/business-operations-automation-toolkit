@@ -314,7 +314,7 @@ def run_workflow(nodes, csv_path, output_folder):
                     if field not in context.get("headers", []):
                         raise ValueError(f"AI text column '{field}' is not present in the CSV.")
                     source_records = context.get("valid_records", context.get("records", []))
-                    source_text = "\\n".join(
+                    source_text = "\n".join(
                         str(row.get(field, "")).strip()
                         for row in source_records
                         if str(row.get(field, "")).strip()
@@ -325,7 +325,7 @@ def run_workflow(nodes, csv_path, output_folder):
                     summary_variable = config.get("output_variable", "ai_summary")
                     details_variable = config.get("details_variable", "ai_key_details")
                     context["variables"][summary_variable] = ai_result.get("summary", "")
-                    context["variables"][details_variable] = "\\n".join(
+                    context["variables"][details_variable] = "\n".join(
                         str(item) for item in ai_result.get("key_details", [])
                     )
                     step["message"] = (
