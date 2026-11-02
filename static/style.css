@@ -335,3 +335,12 @@ textarea.form-control{resize:vertical;min-height:110px}
 @media(max-width:700px){.mapping-editor{grid-template-columns:1fr;padding-left:0}}
 
 .filter-node{background:#e8f5ee;color:#39845f}
+
+.http-node{background:#e9f2ff;color:#3d6da8}
+.workflow-node-http{flex-wrap:wrap}
+.http-editor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;flex:1 1 100%;padding-left:49px}
+.http-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.http-field>span{font-size:9px;color:#758197;font-weight:700}
+.http-field textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px}
+.http-editor-hint{grid-column:1/-1;color:#758197;font-size:10px;padding-left:49px}
+@media(max-width:700px){.http-editor{grid-template-columns:1fr;padding-left:0}.http-editor-hint{padding-left:0}}

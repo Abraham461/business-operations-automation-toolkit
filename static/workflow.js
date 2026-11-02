@@ -391,7 +391,7 @@
   document.querySelectorAll("[data-add-node]").forEach(button => {
     button.addEventListener("click", () => {
       const type = button.dataset.addNode;
-      if (nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
+      if (type !== "http_request" && nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
       const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
       const mappingIndex = nodes.findIndex(node => typeOf(node) === "validate_rows");
       const conditionalIndex = nodes.findIndex(node => typeOf(node) === "conditional_branch");
