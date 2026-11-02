@@ -112,8 +112,10 @@ def run_http_action(config, variables=None):
         raise ValueError("HTTP request body exceeds the 100 KB limit.")
 
     response = None
+    session = requests.Session()
+    session.trust_env = False
     try:
-        response = requests.request(
+        response = session.request(
             method,
             url,
             headers=safe_headers,
