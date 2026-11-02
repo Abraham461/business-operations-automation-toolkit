@@ -3,11 +3,16 @@
     manual_trigger: ["Manual trigger", "Start the workflow", "bi-play-circle", "trigger-node"],
     read_csv: ["Read CSV", "Load uploaded records", "bi-filetype-csv", "data-node"],
     validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
+    conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     generate_pdfs: ["Generate PDFs", "Create customer documents", "bi-file-earmark-pdf", "document-node"],
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
   };
-  const defaults = ["manual_trigger", "read_csv", "validate_rows", "generate_pdfs", "execution_report"];
-  let nodes = defaults.slice();
+  const defaults = [
+    "manual_trigger", "read_csv", "validate_rows",
+    { type: "conditional_branch", field: "plan", operator: "equals", value: "VIP" },
+    "generate_pdfs", "execution_report"
+  ];
+  let nodes = structuredClone(defaults);
   let currentWorkflowId = null;
   let currentVersionId = null;
   let currentWorkflowData = null;
@@ -17,6 +22,8 @@
   const savedSelect = document.getElementById("saved-workflows");
   const versionSelect = document.getElementById("workflow-version");
   const history = document.getElementById("workflow-history");
+  const typeOf = node => typeof node === "string" ? node : node.type;
+  const configOf = node => typeof node === "string" ? { type: node } : node;
 
   const populateVersions = (workflow, selectedId) => {
     versionSelect.replaceChildren();
@@ -41,9 +48,51 @@
     }
   };
 
+  const makeConditionEditor = (node, index) => {
+    const config = configOf(node);
+    const editor = document.createElement("div");
+    editor.className = "condition-editor";
+    const field = document.createElement("input");
+    field.className = "form-control form-control-sm";
+    field.value = config.field || "plan";
+    field.placeholder = "CSV column (e.g. plan)";
+    field.setAttribute("aria-label", "Condition CSV column");
+    field.maxLength = 100;
+    const operator = document.createElement("select");
+    operator.className = "form-select form-select-sm";
+    operator.setAttribute("aria-label", "Condition operator");
+    [
+      ["equals", "equals"], ["not_equals", "does not equal"], ["contains", "contains"],
+      ["greater_than", "greater than"], ["less_than", "less than"],
+      ["is_empty", "is empty"], ["is_not_empty", "is not empty"]
+    ].forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      operator.append(option);
+    });
+    operator.value = config.operator || "equals";
+    const expected = document.createElement("input");
+    expected.className = "form-control form-control-sm";
+    expected.value = config.value || "";
+    expected.placeholder = "Expected value";
+    expected.setAttribute("aria-label", "Condition expected value");
+    expected.maxLength = 200;
+    const update = () => {
+      nodes[index] = { type: "conditional_branch", field: field.value.trim(), operator: operator.value, value: expected.value };
+      markDirty();
+    };
+    field.addEventListener("change", update);
+    operator.addEventListener("change", update);
+    expected.addEventListener("change", update);
+    editor.append(field, operator, expected);
+    return editor;
+  };
+
   const render = () => {
     list.replaceChildren();
-    nodes.forEach((type, index) => {
+    nodes.forEach((nodeData, index) => {
+      const type = typeOf(nodeData);
       const info = labels[type];
       const row = document.createElement("div");
       row.className = "workflow-node-row";
@@ -62,12 +111,25 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
-      if (index > 0 && index < nodes.length - 1) {
+      if (type === "conditional_branch") {
+        node.classList.add("workflow-node-conditional");
+        node.append(makeConditionEditor(nodeData, index));
+      }
+      if (index > 0 && index < nodes.length - 1 && type !== "conditional_branch") {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "node-remove";
         remove.textContent = "Remove";
         remove.setAttribute("aria-label", "Remove " + info[0]);
+        remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
+        node.append(remove);
+      }
+      if (type === "conditional_branch") {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "node-remove";
+        remove.textContent = "Remove";
+        remove.setAttribute("aria-label", "Remove conditional branch");
         remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
@@ -184,7 +246,7 @@
       const latest = currentWorkflowData.latest_version;
       if (!latest) throw new Error("This workflow has no saved version.");
       currentVersionId = latest.id;
-      nodes = latest.definition;
+      nodes = structuredClone(latest.definition);
       document.getElementById("workflow-name").value = currentWorkflowData.name;
       populateVersions(currentWorkflowData, currentVersionId);
       render();
@@ -200,7 +262,7 @@
     const selected = currentWorkflowData.versions.find(item => item.id === versionSelect.value);
     if (!selected) return;
     currentVersionId = selected.id;
-    nodes = selected.definition;
+    nodes = structuredClone(selected.definition);
     render();
     libraryStatus.textContent = "Loaded version " + selected.version_number + ".";
   });
@@ -208,9 +270,12 @@
   document.querySelectorAll("[data-add-node]").forEach(button => {
     button.addEventListener("click", () => {
       const type = button.dataset.addNode;
-      if (nodes.includes(type)) { result.textContent = "This action is already in the workflow."; return; }
-      const reportIndex = nodes.indexOf("execution_report");
-      nodes.splice(reportIndex < 0 ? nodes.length : reportIndex, 0, type);
+      if (nodes.some(node => typeOf(node) === type)) { result.textContent = "This action is already in the workflow."; return; }
+      const reportIndex = nodes.findIndex(node => typeOf(node) === "execution_report");
+      const newNode = type === "conditional_branch"
+        ? { type, field: "plan", operator: "equals", value: "VIP" }
+        : type;
+      nodes.splice(reportIndex < 0 ? nodes.length : reportIndex, 0, newNode);
       markDirty();
       result.textContent = "";
       render();
@@ -218,7 +283,7 @@
   });
 
   document.getElementById("reset-workflow").addEventListener("click", () => {
-    nodes = defaults.slice();
+    nodes = structuredClone(defaults);
     markDirty();
     result.textContent = "";
     render();
