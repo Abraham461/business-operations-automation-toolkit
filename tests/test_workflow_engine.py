@@ -258,6 +258,56 @@ class WorkflowEngineTests(unittest.TestCase):
             self.assertIn("Parsed JSON and created 2", result["steps"][4]["message"])
 
 
+
+    def test_http_response_variable_validation_without_ai_action(self):
+        self.assertEqual(validate_workflow([
+            "manual_trigger", "read_csv", "validate_rows",
+            {"type": "http_request", "method": "GET",
+             "url": "https://api.example.com/data",
+             "response_variable": "api_response"},
+            "execution_report",
+        ])[-2], "http_request")
+
+    def test_http_response_variable_rejects_invalid_names_and_collisions(self):
+        invalid_workflows = [
+            [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "http_request", "url": "https://api.example.com/data",
+                 "response_variable": "bad-name"},
+                "execution_report",
+            ],
+            [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "http_request", "url": "https://api.example.com/data",
+                 "response_variable": "payload", "extract": {"payload": "data.id"}},
+                "execution_report",
+            ],
+        ]
+        for nodes in invalid_workflows:
+            with self.subTest(nodes=nodes):
+                with self.assertRaises(ValueError):
+                    validate_workflow(nodes)
+
+    def test_json_actions_reject_empty_or_malformed_paths(self):
+        invalid_workflows = [
+            [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "set_variables", "values": {"payload": '{"data":{"id":"1"}}'}},
+                {"type": "parse_json", "source_variable": "payload", "extract": {"id": "data..id"}},
+                "execution_report",
+            ],
+            [
+                "manual_trigger", "read_csv", "validate_rows",
+                {"type": "http_request", "url": "https://api.example.com/data",
+                 "extract": {"id": ".data.id"}},
+                "execution_report",
+            ],
+        ]
+        for nodes in invalid_workflows:
+            with self.subTest(nodes=nodes):
+                with self.assertRaises(ValueError):
+                    validate_workflow(nodes)
+
     def test_http_response_can_be_parsed_by_a_later_action(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{

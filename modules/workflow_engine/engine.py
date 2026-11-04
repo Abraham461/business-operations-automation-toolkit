@@ -55,6 +55,7 @@ def validate_workflow(nodes):
     if len(nodes) > 20:
         raise ValueError("A workflow can contain at most 20 actions in this MVP.")
 
+    variable_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     types = [_node_type(node) for node in nodes]
     if any(node_type not in ALLOWED_NODES for node_type in types):
         raise ValueError("The workflow contains an unsupported action.")
@@ -133,7 +134,6 @@ def validate_workflow(nodes):
         field = str(config.get("field", "")).strip()
         output_variable = config.get("output_variable", "ai_summary")
         details_variable = config.get("details_variable", "ai_key_details")
-        variable_pattern = __import__("re").compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
         if not field or len(field) > 100:
             raise ValueError("Choose a valid CSV column for AI text processing.")
         if not isinstance(output_variable, str) or not variable_pattern.fullmatch(output_variable):
@@ -142,7 +142,6 @@ def validate_workflow(nodes):
             raise ValueError("AI details variable must use letters, numbers and underscores.")
         if output_variable == details_variable:
             raise ValueError("AI summary and details must use different variable names.")
-    variable_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
     for node_type, node in zip(types, nodes):
         if node_type == "http_request":
             config = node if isinstance(node, dict) else {}
@@ -168,10 +167,18 @@ def validate_workflow(nodes):
             if not isinstance(extract, dict) or len(extract) > 20:
                 raise ValueError("Response extraction must be an object with at most 20 variables.")
             for variable, path in extract.items():
-                if not isinstance(variable, str) or not variable.replace("_", "a").isalnum() or not variable[0].isalpha():
-                    raise ValueError("Response variable names must use letters, numbers and underscores.")
-                if not isinstance(path, str) or not path.strip() or len(path) > 200:
-                    raise ValueError("Each response variable needs a valid JSON path.")
+                if not isinstance(variable, str) or not variable_pattern.fullmatch(variable):
+                    raise ValueError("Response variable names must start with a letter and use only letters, numbers and underscores.")
+                if (
+                    not isinstance(path, str)
+                    or not path
+                    or path != path.strip()
+                    or len(path) > 200
+                    or any(not segment for segment in path.split("."))
+                ):
+                    raise ValueError("Each response variable needs a valid dot-separated JSON path.")
+            if response_variable and response_variable in extract:
+                raise ValueError("The full response variable must have a different name from extracted variables.")
 
     for node_type, node in zip(types, nodes):
         config = node if isinstance(node, dict) else {}
@@ -198,8 +205,14 @@ def validate_workflow(nodes):
             for name, path in extract.items():
                 if not isinstance(name, str) or not variable_pattern.fullmatch(name):
                     raise ValueError("JSON output variable names must start with a letter and use only letters, numbers and underscores.")
-                if not isinstance(path, str) or not path.strip() or len(path) > 200:
-                    raise ValueError("Each JSON output needs a valid dot path.")
+                if (
+                    not isinstance(path, str)
+                    or not path
+                    or path != path.strip()
+                    or len(path) > 200
+                    or any(not segment for segment in path.split("."))
+                ):
+                    raise ValueError("Each JSON output needs a valid dot-separated path.")
     if types[-1] != "execution_report":
         raise ValueError("The final action must be Execution report.")
     if types.count("execution_report") != 1:
@@ -380,10 +393,12 @@ def run_workflow(nodes, csv_path, output_folder):
                 elif action == "set_variables":
                     config = node if isinstance(node, dict) else {}
                     assignments = config.get("values", {})
-                    for name, template in assignments.items():
-                        context["variables"][name] = _resolve_variable_template(
-                            template, context["variables"]
-                        )
+                    prior_variables = dict(context["variables"])
+                    resolved_assignments = {
+                        name: _resolve_variable_template(template, prior_variables)
+                        for name, template in assignments.items()
+                    }
+                    context["variables"].update(resolved_assignments)
                     step["message"] = f"Set {len(assignments)} workflow variable(s)."
                 elif action == "parse_json":
                     config = node if isinstance(node, dict) else {}
