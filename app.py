@@ -12,15 +12,22 @@ from modules.ai_processing.processor import process_document_text
 from modules.api_testing.runner import run_api_test
 from modules.document_automation.generator import generate_customer_pdfs
 from modules.workflow_engine.engine import run_workflow, validate_workflow
+from modules.workflow_engine.store import WorkflowStore
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["OUTPUT_FOLDER"] = "generated_files"
+app.config["DATABASE_PATH"] = os.getenv(
+    "OPSPILOT_DATABASE", os.path.join(app.instance_path, "opspilot.sqlite3")
+)
 
 for folder in (app.config["UPLOAD_FOLDER"], app.config["OUTPUT_FOLDER"]):
     os.makedirs(folder, exist_ok=True)
+
+workflow_store = WorkflowStore(app.config["DATABASE_PATH"])
+workflow_store.initialize()
 
 
 @app.get("/")
@@ -120,41 +127,91 @@ def api_testing_run():
     )
 
 
-
-@app.get('/workflows')
+@app.get("/workflows")
 def workflows():
-    return render_template('workflows.html')
+    return render_template("workflows.html")
 
 
-@app.post('/workflows/run')
-def workflows_run():
-    uploaded_file = request.files.get('file')
-    if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.csv'):
-        return {'status': 'failed', 'error': 'Upload a CSV file to start the workflow.', 'steps': []}, 400
+@app.get("/api/workflows")
+def api_workflows_list():
+    return {"workflows": workflow_store.list_workflows()}
+
+
+@app.post("/api/workflows")
+def api_workflows_save():
+    payload = request.get_json(silent=True) or {}
+    name = payload.get("name", "")
+    nodes = payload.get("nodes")
+    workflow_id = payload.get("id")
     try:
-        nodes = json.loads(request.form.get('workflow', '[]'))
         validate_workflow(nodes)
+        saved = workflow_store.save_workflow(name, nodes, workflow_id)
+        return {"workflow": saved}, 200 if workflow_id else 201
+    except KeyError:
+        return {"error": "Workflow not found. Refresh the workflow list and try again."}, 404
+    except (ValueError, TypeError) as exc:
+        return {"error": str(exc)}, 400
+
+
+@app.get("/api/workflows/<workflow_id>")
+def api_workflows_get(workflow_id):
+    saved = workflow_store.get_workflow(workflow_id)
+    if saved is None:
+        return {"error": "Workflow not found."}, 404
+    return {"workflow": saved}
+
+
+@app.get("/api/workflows/<workflow_id>/executions")
+def api_workflow_executions(workflow_id):
+    if workflow_store.get_workflow(workflow_id) is None:
+        return {"error": "Workflow not found."}, 404
+    return {"executions": workflow_store.list_executions(workflow_id)}
+
+
+@app.post("/workflows/run")
+def workflows_run():
+    uploaded_file = request.files.get("file")
+    if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith(".csv"):
+        return {"status": "failed", "error": "Upload a CSV file to start the workflow.", "steps": []}, 400
+    try:
+        nodes = json.loads(request.form.get("workflow", "[]"))
+        validate_workflow(nodes)
+        workflow_id = request.form.get("workflow_id") or None
+        version_id = request.form.get("version_id") or None
+        if workflow_id:
+            saved = workflow_store.get_workflow(workflow_id)
+            if saved is None:
+                return {"status": "failed", "error": "Saved workflow not found. Refresh and try again.", "steps": []}, 404
+            if version_id:
+                version = workflow_store.get_version(workflow_id, version_id)
+                if version is None or version["definition"] != nodes:
+                    return {"status": "failed", "error": "The selected saved version does not match the current canvas. Save or reload the workflow before running.", "steps": []}, 409
+        elif version_id:
+            return {"status": "failed", "error": "A workflow version requires a saved workflow.", "steps": []}, 400
+
         safe_name = secure_filename(uploaded_file.filename)
-        path = os.path.join(app.config['UPLOAD_FOLDER'], f'{uuid4().hex}_{safe_name}')
+        path = os.path.join(app.config["UPLOAD_FOLDER"], f"{uuid4().hex}_{safe_name}")
         uploaded_file.save(path)
-        result = run_workflow(nodes, path, app.config['OUTPUT_FOLDER'])
-        result.pop('archive', None)
-        if result['status'] == 'success':
-            result['download_url'] = url_for('workflow_download')
-        return result, (200 if result['status'] == 'success' else 422)
+        result = run_workflow(nodes, path, app.config["OUTPUT_FOLDER"])
+        result.pop("archive", None)
+        execution_id = workflow_store.create_execution(result, workflow_id, version_id)
+        result["execution_id"] = execution_id
+        if result["status"] == "success":
+            result["download_url"] = url_for("workflow_download")
+        return result, (200 if result["status"] == "success" else 422)
     except (ValueError, TypeError, json.JSONDecodeError) as exc:
-        return {'status': 'failed', 'error': str(exc), 'steps': []}, 400
+        return {"status": "failed", "error": str(exc), "steps": []}, 400
     except Exception:
-        app.logger.exception('Workflow execution failed')
-        return {'status': 'failed', 'error': 'The workflow failed unexpectedly.', 'steps': []}, 500
+        app.logger.exception("Workflow execution failed")
+        return {"status": "failed", "error": "The workflow failed unexpectedly.", "steps": []}, 500
 
 
-@app.get('/workflows/download')
+@app.get("/workflows/download")
 def workflow_download():
-    archive = os.path.join(app.config['OUTPUT_FOLDER'], 'customer_documents.zip')
+    archive = os.path.join(app.config["OUTPUT_FOLDER"], "customer_documents.zip")
     if not os.path.isfile(archive):
-        return {'error': 'Run a successful document workflow first.'}, 404
-    return send_file(archive, as_attachment=True, download_name='customer_documents.zip')
+        return {"error": "Run a successful document workflow first."}, 404
+    return send_file(archive, as_attachment=True, download_name="customer_documents.zip")
 
 
 @app.get("/health")
