@@ -10,7 +10,7 @@ A local-first Python/Flask portfolio project demonstrating practical automation 
 |---|---|---|
 | **Workflow Builder** | Connect actions into a controlled sequential process | Manual trigger → CSV reader → field mapping/validation/filtering → optional Set Variables, AI text processing, JSON parsing and HTTPS requests → PDF generation → execution report; saveable definitions, versions and execution history |
 | **CSV-to-PDF automation** | Converts customer rows from a CSV file into individual PDF summaries and packages them into a ZIP | Fixed sample layout; validates required columns and skips incomplete records |
-| **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional OpenRouter integration |
+| **AI text processing** | Produces a concise summary and key details from a text file | Demo mode without a key; optional Google Gemini integration |
 | **REST API testing** | Sends one HTTP request and checks its status against an expected status | GET, POST, PUT, PATCH and DELETE; displays response details |
 
 ## Technology
@@ -62,14 +62,14 @@ You can now:
 - Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts. Optionally store the complete JSON response as a variable for the Parse JSON action.
 - Create or update reusable text variables with the Set Variables action. Values can reference earlier variables with `{{variable_name}}`.
 - Parse JSON stored in a workflow variable and extract nested object or array values into named variables using dot paths such as `data.items.0.id`.
-- Summarize a selected CSV text column using the existing OpenRouter integration; pass the summary and key details to later actions as variables. Without an API key, the existing labelled demo mode is used.
+- Summarize a selected CSV text column using the Google Gemini integration; pass the summary and key details to later actions as variables. Without an API key, the existing labelled demo mode is used.
 - Optionally configure one conditional row branch using a CSV column and an operator.
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
 Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only the rows that pass the filter. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
 
-AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
+AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
 
 HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They can optionally store the complete JSON response in a named variable, which can then be passed to Parse JSON for nested extraction. They require an exact hostname in `OPSPILOT_HTTP_ALLOWED_HOSTS`, use HTTPS only, reject redirects and private/reserved DNS addresses, enforce timeouts and cap response bodies at 1 MB. Configure response extraction as variable-name-to-JSON-path mappings; later request fields can reference values with `{{variable_name}}`. Do not store API secrets directly in workflow definitions. Full public deployment still requires authentication, CSRF protection and stronger network-layer egress controls.
 
@@ -91,11 +91,11 @@ The app returns a ZIP containing one generated PDF per valid row.
 
 Open **AI Processing** and upload `static/sample_document.txt`. Without an API key, the app returns a clearly labelled demo response.
 
-To enable live processing, add your OpenRouter key to `.env`:
+To enable live processing, add your Google AI Studio Gemini API key to `.env`:
 
 ```dotenv
-OPENROUTER_API_KEY=your_key_here
-OPENROUTER_MODEL=openai/gpt-4o-mini
+GEMINI_API_KEY=your_google_ai_studio_key_here
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 Restart the app after changing `.env`. Never commit `.env` or share API keys.
