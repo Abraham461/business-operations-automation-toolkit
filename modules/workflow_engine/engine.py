@@ -76,6 +76,10 @@ def _validate_schema(schema):
         names.append(name)
         if field.get("type", "text") not in FIELD_TYPES:
             raise ValueError(f"Unsupported data type for field '{name}'.")
+        for text_key, limit in (("label", 100), ("default", 1000), ("error_message", 200)):
+            text_value = field.get(text_key, "")
+            if text_value is not None and (not isinstance(text_value, str) or len(text_value) > limit):
+                raise ValueError(f"The {text_key} for '{name}' must be text with at most {limit} characters.")
         for flag in ("required", "unique"):
             if flag in field and not isinstance(field[flag], bool):
                 raise ValueError(f"The {flag} rule for '{name}' must be true or false.")
@@ -121,47 +125,53 @@ def _validate_rows(records, headers, schema):
     valid, errors = [], []
     for row_number, row in enumerate(records, start=2):
         row_errors = []
+        normalized_row = dict(row)
         for field in schema:
             name = field["name"]
+            label = field.get("label") or name
             value = str(row.get(name) or "").strip()
+            if not value and field.get("default") not in (None, ""):
+                value = str(field["default"]).strip()
+                normalized_row[name] = value
             kind = field.get("type", "text")
+            field_errors = []
             if field.get("required") and not value:
-                row_errors.append(f"{name} is required")
-                continue
-            if not value:
-                continue
-            try:
-                if kind == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
-                    row_errors.append(f"{name} must be a valid email")
-                elif kind in {"number", "integer"}:
-                    number = float(value)
-                    if kind == "integer" and not number.is_integer():
-                        row_errors.append(f"{name} must be a whole number")
-                    if field.get("min") not in (None, "") and number < float(field["min"]):
-                        row_errors.append(f"{name} must be at least {field['min']}")
-                    if field.get("max") not in (None, "") and number > float(field["max"]):
-                        row_errors.append(f"{name} must be no more than {field['max']}")
-                elif kind == "boolean" and value.casefold() not in {"true", "false", "1", "0", "yes", "no"}:
-                    row_errors.append(f"{name} must be true or false")
-                elif kind == "date":
-                    datetime.strptime(value, "%Y-%m-%d")
-                if kind == "text":
-                    if field.get("min_length") not in (None, "") and len(value) < int(field["min_length"]):
-                        row_errors.append(f"{name} is shorter than {field['min_length']} characters")
-                    if field.get("max_length") not in (None, "") and len(value) > int(field["max_length"]):
-                        row_errors.append(f"{name} exceeds {field['max_length']} characters")
-            except (ValueError, TypeError):
-                row_errors.append(f"{name} has an invalid {kind} value")
-            if field.get("unique"):
+                field_errors.append(f"{label} is required")
+            elif value:
+                try:
+                    if kind == "email" and not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", value):
+                        field_errors.append(f"{label} must be a valid email")
+                    elif kind in {"number", "integer"}:
+                        number = float(value)
+                        if kind == "integer" and not number.is_integer():
+                            field_errors.append(f"{label} must be a whole number")
+                        if field.get("min") not in (None, "") and number < float(field["min"]):
+                            field_errors.append(f"{label} must be at least {field['min']}")
+                        if field.get("max") not in (None, "") and number > float(field["max"]):
+                            field_errors.append(f"{label} must be no more than {field['max']}")
+                    elif kind == "boolean" and value.casefold() not in {"true", "false", "1", "0", "yes", "no"}:
+                        field_errors.append(f"{label} must be true or false")
+                    elif kind == "date":
+                        datetime.strptime(value, "%Y-%m-%d")
+                    if kind == "text":
+                        if field.get("min_length") not in (None, "") and len(value) < int(field["min_length"]):
+                            field_errors.append(f"{label} is shorter than {field['min_length']} characters")
+                        if field.get("max_length") not in (None, "") and len(value) > int(field["max_length"]):
+                            field_errors.append(f"{label} exceeds {field['max_length']} characters")
+                except (ValueError, TypeError):
+                    field_errors.append(f"{label} has an invalid {kind} value")
+            if field.get("unique") and value:
                 normalized = value.casefold()
                 if normalized in seen[name]:
-                    row_errors.append(f"{name} must be unique")
-                elif value:
+                    field_errors.append(f"{label} must be unique")
+                else:
                     seen[name].add(normalized)
+            if field_errors:
+                row_errors.append(field.get("error_message") or "; ".join(field_errors))
         if row_errors:
             errors.append({"row": row_number, "errors": row_errors})
         else:
-            valid.append(row)
+            valid.append(normalized_row)
     return valid, len(records) - len(valid), errors
 
 
