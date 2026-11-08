@@ -136,11 +136,34 @@
     pickerTitle.textContent = "Choose rows from your CSV";
     const pickerSummary = document.createElement("span");
     pickerSummary.textContent = "Upload a CSV to preview rows";
-    pickerHeading.append(pickerTitle, pickerSummary);
+    const pickerActions = document.createElement("div");
+    pickerActions.className = "validation-row-picker-actions";
+    const selectVisible = document.createElement("button");
+    selectVisible.type = "button";
+    selectVisible.textContent = "Select visible";
+    const clearSelected = document.createElement("button");
+    clearSelected.type = "button";
+    clearSelected.textContent = "Clear selection";
+    pickerActions.append(selectVisible, clearSelected);
+    pickerHeading.append(pickerTitle, pickerSummary, pickerActions);
     const pickerList = document.createElement("div");
     pickerList.className = "validation-row-picker-list";
     rowPicker.append(pickerHeading, pickerList);
     let previewRows = [];
+    const applyVisibleSelection = selected => {
+      const visibleRows = previewRows.slice(1, 51).map((_row, index) => index + 1);
+      const hiddenRows = (scope.rows || []).filter(number => number > 50);
+      scope.mode = "selected";
+      scope.rows = selected ? [...new Set([...hiddenRows, ...visibleRows])].sort((a, b) => a - b) : hiddenRows;
+      scopeMode.value = "selected";
+      rowsInput.value = scope.rows.join(", ");
+      rowsInput.setCustomValidity(scope.rows.length ? "" : "Select at least one row from the preview or enter row numbers.");
+      showScopeInputs();
+      update();
+      renderRowPicker();
+    };
+    selectVisible.addEventListener("click", () => applyVisibleSelection(true));
+    clearSelected.addEventListener("click", () => applyVisibleSelection(false));
     const renderRowPicker = () => {
       pickerList.replaceChildren();
       if (!previewRows.length) {
@@ -178,7 +201,7 @@
         number.textContent = "Row " + rowNumber;
         const preview = document.createElement("span");
         preview.className = "validation-row-preview";
-        preview.textContent = values.slice(0, 3).map(value => String(value).slice(0, 42)).join(" · ");
+        preview.textContent = values.slice(0, 3).map((value, columnIndex) => (previewRows[0][columnIndex] || "Column " + (columnIndex + 1)) + ": " + String(value).slice(0, 42)).join(" · ");
         label.append(checkbox, number, preview);
         pickerList.append(label);
       });
@@ -192,13 +215,24 @@
       const mode = scopeMode.value;
       if (mode === "selected") {
         const tokens = rowsInput.value.split(",").map(value => value.trim());
-        const parsedRows = tokens.map(value => /^\d+$/.test(value) ? Number(value) : NaN);
+        if (tokens.length === 1 && tokens[0] === "") {
+          Object.assign(scope, { mode, rows: [] });
+          delete scope.count; delete scope.start; delete scope.end;
+          rowsInput.setCustomValidity("Select at least one row from the preview or enter row numbers.");
+          scopeHint.textContent = "Select rows from the CSV preview or enter row numbers separated by commas.";
+          showScopeInputs();
+          update();
+          renderRowPicker();
+          return;
+        }
+        const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
         const valid = tokens.length > 0 && tokens.every(Boolean)
           && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
           && new Set(parsedRows).size === parsedRows.length;
         rowsInput.setCustomValidity(valid ? "" : "Enter unique positive row numbers separated by commas, for example 1, 4, 8.");
         if (!valid) {
           scopeHint.textContent = "Enter unique positive row numbers separated by commas. Row 1 is the first data row after the CSV header.";
+          showScopeInputs();
           return;
         }
         Object.assign(scope, { mode, rows: parsedRows });
