@@ -51,6 +51,8 @@
 
   const markDirty = () => {
     currentVersionId = null;
+    const draftState = document.getElementById("workflow-draft-state");
+    if (draftState) { draftState.classList.add("is-dirty"); draftState.innerHTML = "<span></span> Unsaved changes"; }
     if (currentWorkflowData) {
       const draft = document.createElement("option");
       draft.value = "";
@@ -450,6 +452,15 @@
       const info = labels[type];
       const row = document.createElement("div");
       row.className = "workflow-node-row";
+      const stepMeta = document.createElement("div");
+      stepMeta.className = "workflow-step-meta";
+      const stepNumber = document.createElement("span");
+      stepNumber.className = "workflow-step-number";
+      stepNumber.textContent = String(index + 1).padStart(2, "0");
+      const stepLabel = document.createElement("span");
+      stepLabel.textContent = index === 0 ? "TRIGGER" : index === nodes.length - 1 ? "RESULT" : "ACTION";
+      stepMeta.append(stepNumber, stepLabel);
+      row.append(stepMeta);
       const node = document.createElement("div");
       node.className = "workflow-node";
       const icon = document.createElement("span");
@@ -465,6 +476,7 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
+      node.setAttribute("data-step-type", type);
       if (type === "validate_rows") {
         node.classList.add("workflow-node-mapping");
         node.append(makeSchemaEditor(nodeData, index));
@@ -507,6 +519,35 @@
         remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
+      if (index > 0 && index < nodes.length - 1) {
+        const controls = document.createElement("div");
+        controls.className = "workflow-node-controls";
+        const moveButton = (label, iconName, offset, disabled) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "workflow-node-control";
+          button.disabled = disabled;
+          button.title = label;
+          button.setAttribute("aria-label", label + " " + info[0]);
+          const glyph = document.createElement("i");
+          glyph.className = "bi " + iconName;
+          button.append(glyph);
+          button.addEventListener("click", () => {
+            const target = index + offset;
+            if (target <= 0 || target >= nodes.length - 1) return;
+            const moved = nodes.splice(index, 1)[0];
+            nodes.splice(target, 0, moved);
+            markDirty();
+            render();
+          });
+          return button;
+        };
+        controls.append(
+          moveButton("Move up", "bi-arrow-up", -1, index <= 1),
+          moveButton("Move down", "bi-arrow-down", 1, index >= nodes.length - 2)
+        );
+        node.append(controls);
+      }
       row.append(node);
       if (index < nodes.length - 1) {
         const connector = document.createElement("div");
@@ -516,6 +557,8 @@
       }
       list.append(row);
     });
+    const count = document.getElementById("workflow-step-count");
+    if (count) count.textContent = nodes.length + (nodes.length === 1 ? " step" : " steps");
   };
 
   const refreshLibrary = async (selectedId = currentWorkflowId) => {
@@ -591,6 +634,8 @@
       currentVersionId = currentWorkflowData.latest_version.id;
       populateVersions(currentWorkflowData, currentVersionId);
       libraryStatus.textContent = "Saved as version " + currentWorkflowData.latest_version.version_number + ".";
+      const draftState = document.getElementById("workflow-draft-state");
+      if (draftState) { draftState.classList.remove("is-dirty"); draftState.innerHTML = "<span></span> Saved"; }
       await refreshLibrary(currentWorkflowId);
       await refreshHistory();
     } catch (error) {
@@ -625,6 +670,8 @@
       populateVersions(currentWorkflowData, currentVersionId);
       render();
       libraryStatus.textContent = "Loaded version " + latest.version_number + ".";
+      const draftState = document.getElementById("workflow-draft-state");
+      if (draftState) { draftState.classList.remove("is-dirty"); draftState.innerHTML = "<span></span> Saved version " + latest.version_number; }
       await refreshHistory();
     } catch (error) {
       libraryStatus.textContent = error.message;
@@ -751,6 +798,33 @@
       button.disabled = false;
     }
   });
+
+  const actionSearch = document.getElementById("action-search");
+  if (actionSearch) {
+    actionSearch.addEventListener("input", () => {
+      const query = actionSearch.value.trim().toLowerCase();
+      let visible = 0;
+      document.querySelectorAll(".action-option[data-action-name]").forEach(option => {
+        const match = !query || (option.dataset.actionName + " " + option.textContent).toLowerCase().includes(query);
+        option.hidden = !match;
+        if (match) visible += 1;
+      });
+      document.querySelectorAll(".workflow-action-group").forEach(group => {
+        const hasAction = Array.from(group.querySelectorAll(".action-option[data-action-name]")).some(option => !option.hidden);
+        group.hidden = !hasAction && !group.querySelector(".action-option:not([data-action-name])");
+      });
+      const empty = document.getElementById("action-search-empty");
+      if (empty) empty.hidden = visible > 0;
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+        event.preventDefault(); actionSearch.focus();
+      }
+      if (event.key === "Escape" && document.activeElement === actionSearch) {
+        actionSearch.value = ""; actionSearch.dispatchEvent(new Event("input")); actionSearch.blur();
+      }
+    });
+  }
 
   render();
   populateVersions({ versions: [] }, null);
