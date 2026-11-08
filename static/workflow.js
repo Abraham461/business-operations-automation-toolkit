@@ -24,6 +24,61 @@
     { type: "conditional_branch", field: "plan", operator: "equals", value: "VIP" },
     "generate_pdfs", "execution_report"
   ];
+  const workflowTemplates = {
+    customer_records: {
+      name: "Customer record processing",
+      description: "Validate customer details and generate PDFs for active records.",
+      nodes: [
+        "manual_trigger",
+        "read_csv",
+        { type: "validate_rows", schema: [
+          { name: "customer_id", label: "Customer ID", type: "text", required: true, unique: true },
+          { name: "customer_name", label: "Customer name", type: "text", required: true },
+          { name: "email", label: "Email address", type: "email", required: true },
+          { name: "service_type", label: "Service type", type: "text", required: false },
+          { name: "status", label: "Account status", type: "text", required: true }
+        ] },
+        { type: "conditional_branch", field: "status", operator: "equals", value: "Active" },
+        "generate_pdfs",
+        "execution_report"
+      ]
+    },
+    invoice_intake: {
+      name: "Invoice intake and validation",
+      description: "Validate invoice data, exclude zero or negative amounts, and generate review PDFs.",
+      nodes: [
+        "manual_trigger",
+        "read_csv",
+        { type: "validate_rows", schema: [
+          { name: "invoice_number", label: "Invoice number", type: "text", required: true, unique: true },
+          { name: "supplier_name", label: "Supplier name", type: "text", required: true },
+          { name: "invoice_date", label: "Invoice date (YYYY-MM-DD)", type: "date", required: true },
+          { name: "amount", label: "Invoice amount", type: "number", required: true, min: 0.01 },
+          { name: "currency", label: "Currency", type: "text", required: true }
+        ] },
+        { type: "filter_rows", field: "amount", operator: "greater_than", value: "0" },
+        "generate_pdfs",
+        "execution_report"
+      ]
+    },
+    employee_onboarding: {
+      name: "Employee onboarding records",
+      description: "Validate new starter records and create a PDF record for each valid employee.",
+      nodes: [
+        "manual_trigger",
+        "read_csv",
+        { type: "validate_rows", schema: [
+          { name: "employee_id", label: "Employee ID", type: "text", required: true, unique: true },
+          { name: "full_name", label: "Full name", type: "text", required: true },
+          { name: "department", label: "Department", type: "text", required: true },
+          { name: "start_date", label: "Start date (YYYY-MM-DD)", type: "date", required: true },
+          { name: "manager_email", label: "Manager email", type: "email", required: true }
+        ] },
+        "generate_pdfs",
+        "execution_report"
+      ]
+    }
+  };
   let nodes = structuredClone(defaults);
   let currentWorkflowId = null;
   let currentVersionId = null;
@@ -740,6 +795,32 @@
       render();
     });
   });
+
+  const templateSelect = document.getElementById("workflow-template");
+  const applyTemplateButton = document.getElementById("apply-workflow-template");
+  if (templateSelect && applyTemplateButton) {
+    templateSelect.addEventListener("change", () => {
+      applyTemplateButton.disabled = !workflowTemplates[templateSelect.value];
+    });
+    applyTemplateButton.addEventListener("click", async () => {
+      const selected = workflowTemplates[templateSelect.value];
+      if (!selected) return;
+      nodes = structuredClone(selected.nodes);
+      currentWorkflowId = null;
+      currentVersionId = null;
+      currentWorkflowData = null;
+      document.getElementById("workflow-name").value = selected.name;
+      savedSelect.value = "";
+      populateVersions({ versions: [] }, null);
+      const draftState = document.getElementById("workflow-draft-state");
+      if (draftState) { draftState.classList.add("is-dirty"); draftState.innerHTML = "<span></span> Template draft"; }
+      result.replaceChildren();
+      libraryStatus.textContent = selected.description + " Review the input fields, then save as a new workflow.";
+      render();
+      await refreshHistory();
+      document.getElementById("workflow-name").focus();
+    });
+  }
 
   document.getElementById("reset-workflow").addEventListener("click", () => {
     nodes = structuredClone(defaults);
