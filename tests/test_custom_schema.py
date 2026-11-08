@@ -74,6 +74,30 @@ class CustomWorkflowSchemaTests(unittest.TestCase):
             self.assertEqual(result["status"], "success")
             self.assertIn("Mapped 2 field(s)", result["steps"][2]["message"])
 
+    def test_applies_defaults_and_custom_field_error_messages(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = self._csv(folder, ["department", "employee_code"], [
+                {"department": "", "employee_code": ""},
+                {"department": "Finance", "employee_code": "EMP-01"},
+            ])
+            nodes = [
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "schema": [
+                    {"name": "department", "label": "Department", "type": "text",
+                     "required": True, "default": "Operations"},
+                    {"name": "employee_code", "label": "Employee code", "type": "text",
+                     "required": True, "error_message": "Enter a valid employee code."},
+                ]},
+                "execution_report",
+            ]
+            result = run_workflow(nodes, source, folder)
+            self.assertEqual(result["status"], "success")
+            self.assertIn("Validated 1 of 2", result["steps"][2]["message"])
+            self.assertEqual(
+                result["steps"][2]["invalid_rows"][0]["errors"],
+                ["Enter a valid employee code."],
+            )
+
     def test_rejects_duplicate_or_invalid_schema_fields(self):
         with self.assertRaisesRegex(ValueError, "Duplicate input field"):
             validate_workflow([
