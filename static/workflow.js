@@ -518,6 +518,35 @@
         remove.addEventListener("click", () => { nodes.splice(index, 1); markDirty(); render(); });
         node.append(remove);
       }
+      if (index > 0 && index < nodes.length - 1) {
+        const controls = document.createElement("div");
+        controls.className = "workflow-node-controls";
+        const moveButton = (label, iconName, offset, disabled) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "workflow-node-control";
+          button.disabled = disabled;
+          button.title = label;
+          button.setAttribute("aria-label", label + " " + info[0]);
+          const glyph = document.createElement("i");
+          glyph.className = "bi " + iconName;
+          button.append(glyph);
+          button.addEventListener("click", () => {
+            const target = index + offset;
+            if (target <= 0 || target >= nodes.length - 1) return;
+            const moved = nodes.splice(index, 1)[0];
+            nodes.splice(target, 0, moved);
+            markDirty();
+            render();
+          });
+          return button;
+        };
+        controls.append(
+          moveButton("Move up", "bi-arrow-up", -1, index <= 1),
+          moveButton("Move down", "bi-arrow-down", 1, index >= nodes.length - 2)
+        );
+        node.append(controls);
+      }
       row.append(node);
       if (index < nodes.length - 1) {
         const connector = document.createElement("div");
