@@ -112,7 +112,7 @@ def _validate_schema(schema):
     return names
 
 
-def _validate_rows(records, headers, schema):
+def _validate_rows(records, headers, schema, row_numbers=None):
     """Validate records against a workflow-specific schema and return valid rows plus errors."""
     if schema is None:
         missing = sorted(LEGACY_REQUIRED_COLUMNS - set(headers))
@@ -134,7 +134,7 @@ def _validate_rows(records, headers, schema):
         field for field in schema if field["name"] == name
     ).get("unique")}
     valid, errors = [], []
-    for row_number, row in enumerate(records, start=2):
+    for row_number, row in zip(row_numbers or range(2, len(records) + 2), records):
         row_errors = []
         normalized_row = dict(row)
         for field in schema:
@@ -203,6 +203,21 @@ def validate_workflow(nodes):
     schema = _workflow_schema(nodes)
     if schema is not None:
         _validate_schema(schema)
+    validation_node = next((node for node in nodes if _node_type(node) == "validate_rows" and isinstance(node, dict)), {})
+    scope = validation_node.get("scope", {"mode": "all"})
+    if not isinstance(scope, dict) or scope.get("mode", "all") not in {"all", "first_n", "range", "selected"}:
+        raise ValueError("Choose a supported validation row scope.")
+    scope_mode = scope.get("mode", "all")
+    if scope_mode == "first_n" and (not isinstance(scope.get("count"), int) or isinstance(scope.get("count"), bool) or scope["count"] < 1):
+        raise ValueError("First N rows must be a positive whole number.")
+    if scope_mode == "range":
+        start, end = scope.get("start"), scope.get("end")
+        if not isinstance(start, int) or isinstance(start, bool) or not isinstance(end, int) or isinstance(end, bool) or start < 1 or end < start:
+            raise ValueError("Enter a valid validation row range. Row numbers start at 1, excluding the CSV header.")
+    if scope_mode == "selected":
+        selected_rows = scope.get("rows")
+        if not isinstance(selected_rows, list) or not selected_rows or len(selected_rows) > 10000 or any(not isinstance(row, int) or isinstance(row, bool) or row < 1 for row in selected_rows) or len(set(selected_rows)) != len(selected_rows):
+            raise ValueError("Enter one or more unique, positive row numbers to validate.")
     if types.count("map_fields") > 1:
         raise ValueError("A workflow can contain only one Map fields action.")
     if "map_fields" in types:
@@ -481,15 +496,37 @@ def run_workflow(nodes, csv_path, output_folder):
                     if not context["records"]:
                         raise ValueError("The CSV contains no records.")
                     schema = node.get("schema") if isinstance(node, dict) else None
+                    scope = node.get("scope", {"mode": "all"}) if isinstance(node, dict) else {"mode": "all"}
+                    mode = scope.get("mode", "all")
+                    total_rows = len(context["records"])
+                    if mode == "all":
+                        selected_indexes = list(range(total_rows))
+                    elif mode == "first_n":
+                        selected_indexes = list(range(min(scope["count"], total_rows)))
+                    elif mode == "range":
+                        if scope["end"] > total_rows:
+                            raise ValueError(f"Validation range ends at row {scope['end']}, but the CSV contains only {total_rows} data row(s).")
+                        selected_indexes = list(range(scope["start"] - 1, scope["end"]))
+                    else:
+                        if max(scope["rows"]) > total_rows:
+                            raise ValueError(f"Selected validation row {max(scope['rows'])} exceeds the {total_rows} data row(s) in this CSV.")
+                        selected_indexes = sorted(row_number - 1 for row_number in scope["rows"])
+                    selected_records = [context["records"][index] for index in selected_indexes]
+                    csv_line_numbers = [index + 2 for index in selected_indexes]
                     valid, invalid_count, row_errors = _validate_rows(
-                        context["records"], context.get("headers", []), schema
+                        selected_records, context.get("headers", []), schema, csv_line_numbers
                     )
                     context["valid_records"] = valid
                     context["invalid_rows"] = row_errors
+                    unselected_count = total_rows - len(selected_indexes)
+                    context["validation_scope"] = scope
                     step["message"] = (
-                        f"Validated {len(valid)} of {len(context['records'])} row(s); "
-                        f"{invalid_count} invalid row(s) excluded."
+                        f"Validated {len(valid)} of {len(selected_records)} selected row(s); "
+                        f"{invalid_count} invalid row(s) excluded; "
+                        f"{unselected_count} row(s) outside the scope were not validated."
                     )
+                    step["validated_rows"] = len(selected_records)
+                    step["unvalidated_rows"] = unselected_count
                     if row_errors:
                         step["invalid_rows"] = row_errors[:100]
                 elif action == "filter_rows":
