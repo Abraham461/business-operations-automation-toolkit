@@ -23,7 +23,9 @@ ALLOWED_NODES = {
     "generate_pdfs",
     "execution_report",
 }
-REQUIRED_COLUMNS = {"customer_name", "customer_id", "email", "plan"}
+LEGACY_REQUIRED_COLUMNS = {"customer_name", "customer_id", "email", "plan"}
+FIELD_TYPES = {"text", "email", "number", "integer", "boolean", "date"}
+FIELD_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 CONDITION_OPERATORS = {
     "equals",
     "not_equals",
@@ -49,6 +51,141 @@ def _condition_config(node):
     }
 
 
+def _workflow_schema(nodes):
+    """Return the schema configured on Validate rows, or None for legacy workflows."""
+    for node in nodes:
+        if _node_type(node) == "validate_rows" and isinstance(node, dict):
+            schema = node.get("schema")
+            if schema is not None:
+                return schema
+    return None
+
+
+def _validate_schema(schema):
+    if not isinstance(schema, list) or not schema or len(schema) > 50:
+        raise ValueError("Configure between 1 and 50 input fields.")
+    names = []
+    for field in schema:
+        if not isinstance(field, dict):
+            raise ValueError("Each input field must be an object.")
+        name = field.get("name")
+        if not isinstance(name, str) or not FIELD_NAME_PATTERN.fullmatch(name):
+            raise ValueError("Input field names must start with a letter and contain only letters, numbers and underscores.")
+        if name.casefold() in {item.casefold() for item in names}:
+            raise ValueError(f"Duplicate input field name: {name}.")
+        names.append(name)
+        if field.get("type", "text") not in FIELD_TYPES:
+            raise ValueError(f"Unsupported data type for field '{name}'.")
+        for text_key, limit in (("label", 100), ("default", 1000), ("error_message", 200)):
+            text_value = field.get(text_key, "")
+            if text_value is not None and (not isinstance(text_value, str) or len(text_value) > limit):
+                raise ValueError(f"The {text_key} for '{name}' must be text with at most {limit} characters.")
+        for flag in ("required", "unique"):
+            if flag in field and not isinstance(field[flag], bool):
+                raise ValueError(f"The {flag} rule for '{name}' must be true or false.")
+        for limit in ("min", "max", "min_length", "max_length"):
+            value = field.get(limit)
+            if value is not None and value != "":
+                try:
+                    numeric = float(value)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(f"The {limit} rule for '{name}' must be numeric.") from exc
+                if numeric < 0:
+                    raise ValueError(f"The {limit} rule for '{name}' cannot be negative.")
+                if limit in {"min_length", "max_length"} and not numeric.is_integer():
+                    raise ValueError(f"The {limit} rule for '{name}' must be a whole number.")
+        kind = field.get("type", "text")
+        if kind not in {"number", "integer"} and (
+            field.get("min") not in (None, "") or field.get("max") not in (None, "")
+        ):
+            raise ValueError(f"Numeric minimum/maximum rules require a number or integer field: '{name}'.")
+        if kind != "text" and (
+            field.get("min_length") not in (None, "") or field.get("max_length") not in (None, "")
+        ):
+            raise ValueError(f"Text length rules require a text field: '{name}'.")
+        if field.get("min") not in (None, "") and field.get("max") not in (None, ""):
+            if float(field["min"]) > float(field["max"]):
+                raise ValueError(f"The minimum for '{name}' cannot exceed its maximum.")
+        if field.get("min_length") not in (None, "") and field.get("max_length") not in (None, ""):
+            if int(field["min_length"]) > int(field["max_length"]):
+                raise ValueError(f"The minimum length for '{name}' cannot exceed its maximum length.")
+    return names
+
+
+def _validate_rows(records, headers, schema):
+    """Validate records against a workflow-specific schema and return valid rows plus errors."""
+    if schema is None:
+        missing = sorted(LEGACY_REQUIRED_COLUMNS - set(headers))
+        if missing:
+            raise ValueError("Missing required columns: " + ", ".join(missing))
+        valid = [
+            row for row in records
+            if (row.get("customer_name") or "").strip()
+            and (row.get("customer_id") or "").strip()
+        ]
+        return valid, len(records) - len(valid), []
+
+    field_names = _validate_schema(schema)
+    missing = sorted(set(field_names) - set(headers))
+    if missing:
+        raise ValueError("Missing input columns: " + ", ".join(missing))
+
+    seen = {name: set() for name in field_names if next(
+        field for field in schema if field["name"] == name
+    ).get("unique")}
+    valid, errors = [], []
+    for row_number, row in enumerate(records, start=2):
+        row_errors = []
+        normalized_row = dict(row)
+        for field in schema:
+            name = field["name"]
+            label = field.get("label") or name
+            value = str(row.get(name) or "").strip()
+            if not value and field.get("default") not in (None, ""):
+                value = str(field["default"]).strip()
+                normalized_row[name] = value
+            kind = field.get("type", "text")
+            field_errors = []
+            if field.get("required") and not value:
+                field_errors.append(f"{label} is required")
+            elif value:
+                try:
+                    if kind == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
+                        field_errors.append(f"{label} must be a valid email")
+                    elif kind in {"number", "integer"}:
+                        number = float(value)
+                        if kind == "integer" and not number.is_integer():
+                            field_errors.append(f"{label} must be a whole number")
+                        if field.get("min") not in (None, "") and number < float(field["min"]):
+                            field_errors.append(f"{label} must be at least {field['min']}")
+                        if field.get("max") not in (None, "") and number > float(field["max"]):
+                            field_errors.append(f"{label} must be no more than {field['max']}")
+                    elif kind == "boolean" and value.casefold() not in {"true", "false", "1", "0", "yes", "no"}:
+                        field_errors.append(f"{label} must be true or false")
+                    elif kind == "date":
+                        datetime.strptime(value, "%Y-%m-%d")
+                    if kind == "text":
+                        if field.get("min_length") not in (None, "") and len(value) < int(field["min_length"]):
+                            field_errors.append(f"{label} is shorter than {field['min_length']} characters")
+                        if field.get("max_length") not in (None, "") and len(value) > int(field["max_length"]):
+                            field_errors.append(f"{label} exceeds {field['max_length']} characters")
+                except (ValueError, TypeError):
+                    field_errors.append(f"{label} has an invalid {kind} value")
+            if field.get("unique") and value:
+                normalized = value.casefold()
+                if normalized in seen[name]:
+                    field_errors.append(f"{label} must be unique")
+                else:
+                    seen[name].add(normalized)
+            if field_errors:
+                row_errors.append(field.get("error_message") or "; ".join(field_errors))
+        if row_errors:
+            errors.append({"row": row_number, "errors": row_errors})
+        else:
+            valid.append(normalized_row)
+    return valid, len(records) - len(valid), errors
+
+
 def validate_workflow(nodes):
     if not isinstance(nodes, list) or not nodes:
         raise ValueError("Add at least one workflow action.")
@@ -63,6 +200,9 @@ def validate_workflow(nodes):
         raise ValueError("A workflow must start with exactly one Manual trigger.")
     if types.count("read_csv") != 1:
         raise ValueError("Add exactly one Read CSV action.")
+    schema = _workflow_schema(nodes)
+    if schema is not None:
+        _validate_schema(schema)
     if types.count("map_fields") > 1:
         raise ValueError("A workflow can contain only one Map fields action.")
     if "map_fields" in types:
@@ -74,7 +214,8 @@ def validate_workflow(nodes):
         mapping = config.get("mapping", {}) if isinstance(config, dict) else {}
         if not isinstance(mapping, dict) or not mapping:
             raise ValueError("Configure at least one field mapping.")
-        allowed_targets = REQUIRED_COLUMNS
+        schema = _workflow_schema(nodes)
+        allowed_targets = set(_validate_schema(schema)) if schema is not None else LEGACY_REQUIRED_COLUMNS
         for target, source in mapping.items():
             if target not in allowed_targets:
                 raise ValueError(f"Unsupported target field: {target}.")
@@ -337,20 +478,20 @@ def run_workflow(nodes, csv_path, output_folder):
                     ))
                     step["message"] = f"Mapped {len(mapping)} field(s) across {len(mapped_records)} row(s)."
                 elif action == "validate_rows":
-                    missing = sorted(REQUIRED_COLUMNS - set(context.get("headers", [])))
-                    if missing:
-                        raise ValueError("Missing required columns: " + ", ".join(missing))
                     if not context["records"]:
                         raise ValueError("The CSV contains no records.")
-                    valid = [
-                        row for row in context["records"]
-                        if (row.get("customer_name") or "").strip()
-                        and (row.get("customer_id") or "").strip()
-                    ]
-                    context["valid_records"] = valid
-                    step["message"] = (
-                        f"Validated {len(valid)} of {len(context['records'])} row(s)."
+                    schema = node.get("schema") if isinstance(node, dict) else None
+                    valid, invalid_count, row_errors = _validate_rows(
+                        context["records"], context.get("headers", []), schema
                     )
+                    context["valid_records"] = valid
+                    context["invalid_rows"] = row_errors
+                    step["message"] = (
+                        f"Validated {len(valid)} of {len(context['records'])} row(s); "
+                        f"{invalid_count} invalid row(s) excluded."
+                    )
+                    if row_errors:
+                        step["invalid_rows"] = row_errors[:100]
                 elif action == "filter_rows":
                     config = _condition_config(node)
                     field = str(config.get("field", "")).strip()
@@ -471,12 +612,12 @@ def run_workflow(nodes, csv_path, output_folder):
                     elif not source_records:
                         raise ValueError("No valid rows are available for PDF generation.")
                     else:
-                        source_path = csv_path
-                        if context["condition_evaluated"] or context["filter_evaluated"]:
-                            filtered_csv = _write_filtered_csv(
-                                source_records, context["headers"], output_folder
-                            )
-                            source_path = filtered_csv
+                        # Always generate from the validated/transformed record set.
+                        # This prevents invalid rows or unmapped source data leaking into output.
+                        filtered_csv = _write_filtered_csv(
+                            source_records, context["headers"], output_folder
+                        )
+                        source_path = filtered_csv
                         archive, count = generate_customer_pdfs(source_path, output_folder)
                         context["archive"] = archive
                         context["pdf_count"] = count
