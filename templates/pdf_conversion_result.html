@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}PDF to Excel result{% endblock %}
+{% block breadcrumb %}Document automation / PDF conversion{% endblock %}
+{% block content %}
+<div class="page-intro">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> DOCUMENT AUTOMATION</div><h1>PDF conversion result</h1><p>Review the detected tables before downloading your workbook.</p></div>
+  <span class="page-icon icon-teal"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+</div>
+{% if error %}
+  <section class="surface-card">
+    <div class="alert alert-warning mb-3" role="alert"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+    <a class="btn btn-outline-primary" href="/documents"><i class="bi bi-arrow-left me-2"></i>Back to document automation</a>
+  </section>
+{% else %}
+  <section class="surface-card mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div><span class="card-kicker">CONVERSION COMPLETE</span><h2 class="mt-2 mb-1">{{ table_count }} table(s) detected</h2><p class="text-muted small mb-0">Workbook: {{ filename }}</p></div>
+      <a class="btn btn-primary app-primary-btn" href="{{ download_url }}"><i class="bi bi-download me-2"></i>Download Excel workbook</a>
+    </div>
+  </section>
+  {% for table in tables %}
+    <section class="surface-card mb-4">
+      <div class="card-heading"><div><span class="card-kicker">EXTRACTED TABLE {{ loop.index }}</span><h2>{{ table.title }}</h2><p>{{ table.total_rows }} data row(s). Showing up to 10 rows for preview.</p></div></div>
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+          <thead><tr>{% for header in table.headers %}<th>{{ header or "Column " ~ loop.index }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for row in table.rows %}
+              <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+            {% else %}
+              <tr><td colspan="{{ table.headers|length }}">No data rows were detected below the header.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endfor %}
+  <div class="bottom-strip"><i class="bi bi-info-circle strip-icon"></i><div><strong>Please review the workbook.</strong><p>PDF table extraction can misread merged cells, unusual layouts, and multi-line values. The preview is limited to 10 rows per table. Scanned PDFs are not supported in this version.</p></div></div>
+  <a class="text-link d-inline-block mt-3" href="/documents"><i class="bi bi-arrow-left me-1"></i>Convert another PDF</a>
+{% endif %}
+{% endblock %}

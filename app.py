@@ -11,10 +11,12 @@ load_dotenv()
 from modules.ai_processing.processor import process_document_text
 from modules.api_testing.runner import run_api_test
 from modules.document_automation.generator import generate_customer_pdfs
+from modules.document_automation.routes import pdf_conversion_bp
 from modules.workflow_engine.engine import run_workflow, validate_workflow
 from modules.workflow_engine.store import WorkflowStore
 
 app = Flask(__name__)
+app.register_blueprint(pdf_conversion_bp)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -47,7 +49,7 @@ def documents_generate():
         flash("Choose a CSV file first.", "error")
         return redirect(url_for("documents"))
     if not uploaded_file.filename.lower().endswith(".csv"):
-        flash("For this MVP, upload a CSV file.", "error")
+        flash("Please upload a valid CSV file.", "error")
         return redirect(url_for("documents"))
 
     safe_name = secure_filename(uploaded_file.filename)
@@ -56,8 +58,8 @@ def documents_generate():
 
     try:
         output_path, count = generate_customer_pdfs(path, app.config["OUTPUT_FOLDER"])
-        flash(f"Generated {count} sample customer PDF(s).", "success")
-        return send_file(output_path, as_attachment=True, download_name="customer_documents.zip")
+        flash(f"Generated {count} PDF record(s) from your CSV.", "success")
+        return send_file(output_path, as_attachment=True, download_name="csv_records.zip")
     except (ValueError, OSError) as exc:
         app.logger.warning("Document generation rejected or failed: %s", exc)
         flash(f"Could not generate documents: {exc}", "error")
