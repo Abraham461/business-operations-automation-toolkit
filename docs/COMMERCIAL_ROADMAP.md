@@ -1,170 +1,198 @@
-# OpsPilot Commercial Product Strategy
+# OpsPilot Enterprise Product and Commercial Strategy
 
-**Status:** Proposed commercial direction  
-**Target:** USD 2,000 in monthly recurring revenue (MRR)  
-**Market:** International  
-**Product direction:** General-purpose business operations automation platform  
-**Initial go-to-market:** Focused workflows for operations-heavy small businesses
+**Commercial target:** USD $2,000 per customer per month (annual contract value: $24,000), excluding implementation fees.  
+**Market:** International.  
+**Product direction:** General-purpose business operations automation platform, sold initially through focused, high-value operational solutions.
 
-## 1. Product positioning
+## 1. Commercial positioning
 
-OpsPilot helps small businesses turn repetitive, file-driven operational processes into repeatable workflows without requiring a developer for every task.
+OpsPilot is intended to become a business automation platform that orchestrates document-heavy and repetitive operational processes across business files, APIs, and connected systems.
 
-**Core promise:** Bring business files and tools together, automate the process, and make every run visible and reviewable.
+At a $2,000 monthly contract, customers are not buying a PDF converter or a basic workflow editor. They are buying a managed operational capability that reliably handles important business processes, provides visibility and controls, and demonstrates measurable return on investment.
 
-OpsPilot should evolve from a local automation toolkit into a hosted, multi-tenant SaaS platform. The current repository is an MVP and is not production-ready for public deployment.
+**Positioning statement:** OpsPilot helps operations teams automate, monitor, and continuously improve complex business workflows across documents and business systems.
 
-## 2. Initial customer wedge
+The $2,000/month price is a target to validate, not proven willingness to pay. It will require customer discovery, measurable outcomes, reliability, security, integrations, and a strong service model.
 
-Keep the underlying platform general-purpose, but avoid marketing it as automation for absolutely everyone at launch. Start by validating repeatable workflows with operations-heavy small businesses, such as:
+## 2. Ideal customer profile and entry strategy
 
-- Recruitment and staffing firms
-- Accounting and bookkeeping practices
-- Digital and professional services agencies
-- Property management operators
-- Small distributors and wholesalers
+Do not attempt to sell to every business at once. Keep the platform general-purpose, but enter through one segment and one costly recurring workflow.
 
-These are candidate segments, not validated demand. Customer interviews and paid pilots must determine which segment has the strongest pain and willingness to pay.
+Candidate customer profiles:
+- Recruitment and staffing firms processing candidate documents, onboarding packs, and client submissions.
+- Accounting and bookkeeping practices processing invoices, statements, reconciliations, and monthly client documents.
+- Property management operators handling tenant applications, lease documents, maintenance requests, and recurring reports.
+- Distributors and wholesalers processing purchase orders, supplier documents, invoices, and inventory updates.
+- Professional services firms handling client intake, document preparation, approvals, and reporting.
 
-Prioritize workflows that are frequent, rule-based, file-heavy, costly to perform manually, and easy to measure.
+These are hypotheses, not validated market findings. Interview prospective buyers and operators. Select the segment with frequent high-cost manual work, clear decision-makers, accessible data, measurable savings, and budget.
 
-## 3. Initial product use cases
+Target companies with enough workflow volume and operational complexity to justify a $24,000 annual software/service commitment. A microbusiness with occasional PDF conversion is unlikely to be a suitable $2,000/month customer.
 
-1. **Document and spreadsheet processing:** extract structured data from PDFs and spreadsheets, validate it, transform it, and export clean results.
-2. **Document generation:** generate customer-specific documents from configurable input schemas and templates.
-3. **Operational workflow automation:** connect file intake, validation, transformation, API calls, document generation, and execution reports.
-4. **AI-assisted processing:** extract or summarize unstructured text with human review for uncertain results.
-5. **Monitoring:** retain execution history, surface failures, and make reruns understandable.
+## 3. What customers pay for
 
-The first release should deliver a small number of complete, reliable workflows rather than a large catalogue of partially implemented integrations.
+Package OpsPilot as an operational automation solution with five capability areas:
 
-## 4. Proposed subscription packaging
+1. **Document intelligence:** ingest PDFs, spreadsheets, CSVs, and business forms; extract, classify, validate, and transform data; support human review for uncertain results.
+2. **Workflow orchestration:** connect triggers, business rules, approvals, file operations, API requests, and outputs into multi-step workflows.
+3. **Business integrations:** securely connect the customer's existing systems through APIs and supported connectors.
+4. **Operational control:** execution history, step-level logs, retries, alerts, audit trails, permissions, and exception handling.
+5. **Managed outcomes:** workflow discovery, configuration, onboarding, monitoring, optimization, and support appropriate to the contract.
 
-Pricing below is a hypothesis for testing, not validated market pricing.
+The customer outcome is not “we have AI.” It is a specific measurable result, such as reduced processing hours, shorter turnaround time, fewer data-entry errors, or improved throughput.
 
-| Plan | Proposed price | Intended customer |
-|---|---:|---|
-| Starter | $49/month | Small team validating its first workflows |
-| Growth | $149/month | Small business automating recurring operations |
-| Business | $299/month | Team with multiple workflows and higher usage |
+## 4. $2,000/month offer design
 
-Differentiate plans using transparent limits for active workflows, monthly executions, team seats, storage, and support. Do not impose arbitrary limits until infrastructure costs and customer usage are understood.
+Treat this as a high-value Business/Enterprise contract, not a self-serve entry plan.
 
-Illustrative paths to $2,000 MRR:
+**Proposed target package: OpsPilot Operations Automation - from $2,000/month**
 
-- 14 Growth customers = $2,086 MRR
-- 7 Business customers = $2,093 MRR
-- 4 Business + 6 Growth customers = $2,090 MRR
+Potential package components, subject to discovery and delivery-cost validation:
+- A defined number of production workflows and agreed monthly execution capacity.
+- Workflow discovery and initial configuration.
+- Agreed document processing and integration scope.
+- Organization workspaces, role-based access, and audit history.
+- Execution monitoring, failure notifications, and operational reporting.
+- Defined support response targets and periodic workflow reviews.
+- Onboarding and implementation scope agreed separately in the order form.
 
-MRR excludes one-time onboarding and implementation fees. Track churn, gross margin, payment fees, AI/API costs, and support time separately.
+Do not promise unlimited executions, unlimited integrations, custom development, or 24/7 support at this price without costing the delivery. Define fair-use limits, supported file sizes, retention, third-party API charges, support hours, and change-request terms.
 
-Offer optional paid onboarding or workflow implementation. Keep service revenue separate from subscription MRR.
+**Implementation fee:** Quote separately based on workflow complexity, integration count, migration, and onboarding effort. Validate the fee through paid pilots. Do not count one-time implementation revenue as MRR.
 
-## 5. Product roadmap and release gates
+A lower-priced self-serve tier may eventually help smaller customers discover the platform, but it is not the core $2,000/customer offer. Avoid investing heavily in low-priced tiers before validating the premium offer.
 
-### Phase 1 - Complete the MVP workflows
+## 5. Customer ROI and qualification
 
-- Finish and verify PDF table extraction and Excel export.
-- Finish configurable workflow input schemas and dynamic field mapping.
+A $2,000 monthly subscription needs a credible economic case. For each prospect, document:
+- Current monthly process volume.
+- Staff hours and fully loaded labor cost.
+- Error, rework, and delay costs where measurable.
+- Proposed automated steps and remaining human review.
+- Expected monthly savings or capacity released.
+- Implementation effort, risks, and ongoing operating costs.
+
+Illustrative example only: if a workflow saves 100 staff hours/month at a fully loaded cost of $25/hour, that is $2,500/month of labor capacity. This is not automatically $2,500 in cash savings; validate whether the capacity can be redeployed or costs reduced. The customer should see a defensible benefit materially greater than the fee.
+
+Do not sell the $2,000 package to prospects whose process volume cannot support the economics.
+
+## 6. Product roadmap and release gates
+
+### Phase 1 - Reliable core workflows
+
+- Complete and verify PDF table extraction and Excel export.
+- Complete configurable workflow input schemas and dynamic field mapping.
 - Redesign Workflow Builder for clarity and predictable operation.
-- Provide useful workflow templates and sample datasets.
+- Deliver several complete workflow templates for the chosen initial use case.
 - Improve validation, row-level errors, execution reports, and safe reruns.
-- Test supported file formats and document extraction edge cases.
+- Test supported file formats, extraction edge cases, and large inputs.
+- Add workflow previews/dry runs and step-level execution results.
 
-**Exit gate:** A new user can complete at least two documented business workflows without developer intervention, and automated tests cover the critical processing paths.
+**Exit gate:** A pilot customer can run an agreed operational workflow repeatedly, review exceptions, and demonstrate measurable time or quality improvements.
 
-### Phase 2 - SaaS foundation
+### Phase 2 - SaaS and enterprise foundations
 
-- Authentication, password recovery, and secure sessions.
-- Organization/workspace model and tenant isolation.
-- Role-based access control.
+- Authentication, password recovery, secure sessions, and MFA option.
+- Organization/workspace model, tenant isolation, and role-based access.
 - Database migrations and production database support.
-- Secure object storage and file lifecycle management.
-- Background job queue and worker processes.
-- Scheduling, retries, idempotency, and execution status tracking.
-- Credential/secret storage and redaction.
+- Secure object storage, file lifecycle controls, and retention policies.
+- Background job queue, worker processes, and execution concurrency controls.
+- Scheduling, retries, idempotency, timeouts, and exception queues.
+- Secure credential storage, encryption, and secret redaction.
 - CSRF protection, rate limits, audit logs, and security monitoring.
-- Operational logging, backups, and restore procedures.
+- Backups, restore tests, observability, and incident procedures.
+- Data export/deletion and customer offboarding procedures.
 
-**Exit gate:** Tenant-isolation and security tests pass; workflows run reliably in a hosted environment; operational failures can be detected and recovered.
+**Exit gate:** Tenant-isolation and security tests pass; failures are observable and recoverable; customer data is separated and handled under documented controls.
 
-### Phase 3 - Billing and customer experience
+### Phase 3 - Integrations and operational management
 
-- Subscription plans and entitlement enforcement.
-- Payment provider integration and webhook verification.
-- Customer billing portal and cancellation handling.
-- Usage metering and transparent quota warnings.
-- Guided onboarding and workflow templates.
-- Product documentation, support process, and status communication.
+- Stable, documented API and webhook support.
+- Priority integrations selected from actual pilot customer systems.
+- Approval and human-in-the-loop steps.
+- Exception queues and controlled reruns.
+- Operational dashboards and customer-facing reports.
+- Integration credential rotation and connection health checks.
 
-**Exit gate:** A customer can register, subscribe, configure a workflow, see usage, manage billing, and cancel without manual database intervention.
+**Exit gate:** The product reliably connects the systems required by the chosen customer segment without bespoke code for every routine workflow.
 
-### Phase 4 - Commercial validation and growth
+### Phase 4 - Commercial operations
 
-- Interview prospective customers about actual workflows and costs.
-- Select one beachhead segment based on evidence.
-- Run paid pilots with clearly defined success metrics.
-- Publish workflow-specific demonstrations and case studies.
-- Convert successful pilots into recurring subscriptions.
-- Track activation, time-to-first-value, conversion, retention, churn, and gross margin.
+- Subscription contracts, invoicing, payment collection, and renewals.
+- Entitlement and usage metering.
+- Customer onboarding and workflow discovery process.
+- Support procedures, service boundaries, and escalation.
+- Security and privacy documentation appropriate to target buyers.
+- Sales demonstrations, ROI calculator, and customer case studies.
 
-**Exit gate:** Repeatable acquisition and retention evidence, not merely sign-ups or demo interest.
+**Exit gate:** A buyer can understand the offer, sign an agreement, complete onboarding, and receive the agreed service with predictable delivery cost.
 
-## 6. Workflow Builder product principles
+## 7. Workflow Builder product principles
 
-The Workflow Builder is strategically important, but it must not become a complex diagram editor that customers need training to operate.
+The Workflow Builder is important, but the goal is operational clarity, not a visually complicated canvas.
 
-- Use a clear step-by-step workflow layout with readable action cards.
-- Make the trigger, input, actions, conditions, and outputs visually distinct.
-- Provide a searchable action catalogue and sensible defaults.
-- Configure each action in a focused side panel or editor.
-- Show required inputs and validation before execution.
-- Make variable mapping and data flow understandable.
-- Provide sample data, dry-run/preview capability, and actionable errors.
-- Show execution progress and step-level results.
-- Support templates so users start from working examples.
-- Preserve accessibility, keyboard navigation, and responsive layouts.
+- Separate trigger, input, actions, conditions, approvals, and outputs.
+- Use readable step cards and a searchable action catalogue.
+- Configure each step in a focused panel with clear required fields.
+- Make variable mapping and data flow explicit.
+- Validate configuration before saving or running.
+- Provide sample data, dry-run/preview, and actionable errors.
+- Show progress, step-level outputs, retries, and exception details.
+- Provide tested templates so users do not start from a blank canvas.
+- Keep the interface responsive and accessible.
 
-Prefer a reliable guided builder over advanced canvas features until customer evidence justifies more complexity.
+Prioritize reliability and usability over adding many action types.
 
-## 7. Technical and security constraints
+## 8. Security, privacy, and reliability
 
-The current application is local-first and single-operator. It must not be exposed publicly in its current state.
+The current repository is a local-first MVP and is not ready to be exposed publicly or to process customer production data.
 
-Before public SaaS deployment, address at minimum:
+Before production customer deployments, address:
+- Authentication, authorization, tenant isolation, and CSRF.
+- Secure upload validation, malware/file safety controls, storage, and download authorization.
+- Encryption in transit and at rest where appropriate; secrets and credentials must never be committed or logged.
+- SSRF-safe outbound HTTP integrations with network-layer egress controls.
+- Data retention, deletion, backups, recovery, and auditability.
+- Background job isolation, timeouts, retries, idempotency, and resource limits.
+- Monitoring, incident response, dependency scanning, and vulnerability management.
+- Clear data processing terms and disclosure of third-party AI/API providers.
 
-- Authentication, authorization, tenant isolation, and CSRF protection.
-- Secure upload validation, storage, download authorization, and retention.
-- Server-side secret management and credential redaction.
-- SSRF-safe outbound integrations with network-layer egress controls.
-- Background execution, timeouts, retries, idempotency, and resource limits.
-- Database migrations, backups, monitoring, and incident handling.
-- Dependency and vulnerability scanning.
+Never use real customer, banking, insurance, or confidential data in demos. AI-generated extraction and classification must support review and exception handling; do not claim perfect accuracy.
 
-Never use real customer, banking, insurance, or other confidential data in demo workflows. AI output must be reviewable and must not be presented as guaranteed accurate.
+## 9. Go-to-market plan
 
-## 8. Commercial metrics
+1. Interview 15-20 operations leaders or process owners in candidate segments. Ask them to demonstrate a real process and quantify its volume, time, errors, and existing tools.
+2. Choose one initial segment and one repeatable workflow based on evidence, not personal preference.
+3. Build a realistic demo using synthetic data and show the before/after process.
+4. Offer a paid, tightly scoped pilot with agreed success metrics, implementation boundaries, and a path to a $2,000/month contract.
+5. Measure actual time saved, processing throughput, error rates, exception rates, and ongoing support effort.
+6. Convert only pilots that demonstrate recurring value into annual or monthly subscriptions.
+7. Use verified case studies and referrals to acquire similar customers.
 
-Review these metrics during pilots and after launch:
+Avoid broad paid advertising until the target buyer, use case, conversion message, and retention are understood. Founder-led outreach and discovery are the practical initial channels.
 
-- Qualified prospects interviewed
-- Paid pilots started and completed
-- Time from signup to first successful workflow
-- Weekly active workspaces
-- Successful versus failed workflow executions
-- Workflow reuse and execution frequency
-- Trial-to-paid conversion
-- MRR and average revenue per account
-- Monthly logo and revenue churn
-- Gross margin after hosting, AI, and integration costs
-- Support hours per customer
+## 10. Commercial scorecard
 
-## 9. Immediate repository priorities
+Track:
+- Qualified buyer interviews and workflow assessments.
+- Paid pilots and pilot-to-contract conversion.
+- Contracted MRR and annual recurring revenue.
+- Time to first successful workflow.
+- Workflow success, exception, and retry rates.
+- Measured customer time/cost savings.
+- Gross margin after hosting, AI/API costs, and support labor.
+- Customer retention, renewal, and expansion.
+- Implementation hours and ongoing support hours per account.
 
-1. Review and merge the PDF-to-Excel feature after local end-to-end verification.
-2. Retarget and complete the configurable workflow-schema PR after its dependency is merged.
-3. Redesign Workflow Builder before expanding the action catalogue.
-4. Add end-to-end tests for the core customer workflows.
-5. Keep production SaaS infrastructure work behind the MVP reliability and security gates.
+A $2,000 monthly contract is attractive only if delivery can be repeated with healthy gross margin and manageable founder support.
 
-**Decision rule:** Build the smallest reliable workflow that saves a real business measurable time or money. Validate willingness to pay before expanding the platform.
+## 11. Immediate repository priorities
+
+1. Verify and merge the PDF-to-Excel feature after local end-to-end testing.
+2. Complete configurable workflow schemas and field mapping after its dependency is merged.
+3. Redesign Workflow Builder around clear operational steps and templates.
+4. Build one complete vertical workflow demo with synthetic data and measurable ROI.
+5. Add end-to-end tests and execution visibility.
+6. Plan the multi-tenant SaaS/security foundation before any public customer deployment.
+
+**Decision rule:** Sell a measurable business outcome first. Build platform breadth only when multiple paying customers need it.
