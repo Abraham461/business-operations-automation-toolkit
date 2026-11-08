@@ -57,7 +57,8 @@ You can now:
 - Load saved workflows from the local SQLite database.
 - Create a new version when a saved workflow's action sequence or condition changes.
 - Review recent execution history for each saved workflow.
-- Map differently named source CSV columns to the required customer fields before validation.
+- Define workflow-specific input fields, data types, required/unique rules and numeric minimum/maximum values in the Validate rows action.
+- Map differently named source CSV columns to any field in that workflow's configured schema.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
 - Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts. Optionally store the complete JSON response as a variable for the Parse JSON action.
 - Create or update reusable text variables with the Set Variables action. Values can reference earlier variables with `{{variable_name}}`.
@@ -67,7 +68,7 @@ You can now:
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
-Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only the rows that pass the filter. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
+Schema validation supports text, email, number, integer, boolean and ISO date (`YYYY-MM-DD`) fields. Required and unique checks apply to each workflow's configured schema. Numeric fields can have minimum and maximum values. Invalid rows are excluded and their row numbers and validation reasons are included in the Validate rows execution step. Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only validated rows that pass any filter or condition. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
 
 AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
 
@@ -75,7 +76,7 @@ HTTP Request actions support GET, POST, PUT, PATCH and DELETE. They can optional
 
 The database is created automatically at `instance/opspilot.sqlite3` on first launch. Set `OPSPILOT_DATABASE` in `.env` to use another local database path. Existing workflow files are not migrated because the earlier MVP did not persist them.
 
-The field mapper can map the customer name, customer ID, email and plan fields. It preserves original source columns and adds mapped canonical fields. The current MVP supports one row filter and one conditional branch per workflow. Nested branches, arbitrary expressions and loops are not supported.
+The default sample workflow starts with customer fields, but each workflow can define its own schema. For example, a sales workflow can define `product_name`, `quantity` and `unit_price`, while an HR workflow can define `employee_id`, `department` and `joining_date`. Field mapping preserves original source columns and adds mapped workflow fields. The current MVP supports one row filter and one conditional branch per workflow. Nested branches, arbitrary expressions and loops are not supported.
 
 ## Try the sample workflows
 
@@ -120,7 +121,7 @@ After installing dependencies:
 python -m unittest discover -s tests -v
 ```
 
-These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, field mapping, row filtering, conditional row routing, reusable workflow variables, JSON extraction and HTTP action configuration/variable chaining. They do **not** replace a full browser-based test of the Flask application.
+These tests cover document generation, basic API runner behavior, AI demo mode, workflow persistence, configurable workflow schemas, field types and validation rules, flexible field mapping, row filtering, conditional row routing, reusable workflow variables, JSON extraction and HTTP action configuration/variable chaining. They do **not** replace a full browser-based test of the Flask application.
 
 ## Project structure
 
@@ -156,7 +157,7 @@ These tests cover document generation, basic API runner behavior, AI demo mode, 
 ## Roadmap
 
 1. **Completed:** persist workflow definitions, versions and execution history locally.
-2. **Completed in this branch:** configurable field mapping, row filtering and one conditional row branch.
+2. **Completed in this branch:** configurable input schemas, field mapping, row validation, row filtering and one conditional row branch.
 3. **Added in this branch:** configurable HTTPS requests with host allowlisting, response extraction and variable chaining, AI text processing, reusable Set Variables and JSON Parse actions.
 4. Improve API testing with configurable response extraction, variable chaining and assertions.
 5. Add scheduling, background execution, retries and monitoring.
