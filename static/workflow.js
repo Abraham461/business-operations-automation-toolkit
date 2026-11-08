@@ -2,7 +2,7 @@
   const labels = {
     manual_trigger: ["Manual trigger", "Start the workflow", "bi-play-circle", "trigger-node"],
     read_csv: ["Read CSV", "Load uploaded records", "bi-filetype-csv", "data-node"],
-    map_fields: ["Map fields", "Match source columns to customer fields", "bi-arrow-left-right", "map-node"],
+    map_fields: ["Map fields", "Map source columns to your workflow fields", "bi-arrow-left-right", "map-node"],
     validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
     filter_rows: ["Filter rows", "Keep records that match a rule", "bi-funnel", "filter-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
@@ -14,7 +14,13 @@
     execution_report: ["Execution report", "Summarize the run", "bi-clipboard-data", "report-node"]
   };
   const defaults = [
-    "manual_trigger", "read_csv", "validate_rows",
+    "manual_trigger", "read_csv",
+    { type: "validate_rows", schema: [
+      { name: "customer_name", type: "text", required: true, unique: false },
+      { name: "customer_id", type: "text", required: true, unique: true },
+      { name: "email", type: "email", required: true, unique: false },
+      { name: "plan", type: "text", required: true, unique: false }
+    ] },
     { type: "conditional_branch", field: "plan", operator: "equals", value: "VIP" },
     "generate_pdfs", "execution_report"
   ];
@@ -54,32 +60,134 @@
     }
   };
 
+  const defaultSchema = () => [
+    { name: "customer_name", type: "text", required: true, unique: false },
+    { name: "customer_id", type: "text", required: true, unique: true },
+    { name: "email", type: "email", required: true, unique: false },
+    { name: "plan", type: "text", required: true, unique: false }
+  ];
+
+  const schemaForWorkflow = () => {
+    const validation = nodes.find(item => typeOf(item) === "validate_rows");
+    const config = validation ? configOf(validation) : {};
+    return Array.isArray(config.schema) && config.schema.length ? config.schema : defaultSchema();
+  };
+
+  const makeSchemaEditor = (node, index) => {
+    const config = configOf(node);
+    const schema = Array.isArray(config.schema) && config.schema.length
+      ? structuredClone(config.schema) : defaultSchema();
+    const editor = document.createElement("div");
+    editor.className = "mapping-editor";
+    const heading = document.createElement("strong");
+    heading.textContent = "Input fields and validation rules";
+    const help = document.createElement("small");
+    help.textContent = "Define the columns this workflow expects. Required and unique rules are checked before later actions run.";
+    editor.append(heading, help);
+    const update = () => {
+      nodes[index] = { type: "validate_rows", schema };
+      markDirty();
+    };
+    schema.forEach((field, fieldIndex) => {
+      const row = document.createElement("div");
+      row.className = "mapping-field";
+      const name = document.createElement("input");
+      name.className = "form-control form-control-sm";
+      name.value = field.name || "";
+      name.placeholder = "field_name";
+      name.maxLength = 64;
+      name.setAttribute("aria-label", "Input field name");
+      const type = document.createElement("select");
+      type.className = "form-select form-select-sm";
+      ["text", "email", "number", "integer", "boolean", "date"].forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+        type.append(option);
+      });
+      type.value = field.type || "text";
+      const requiredLabel = document.createElement("label");
+      const required = document.createElement("input");
+      required.type = "checkbox";
+      required.checked = Boolean(field.required);
+      requiredLabel.append(required, document.createTextNode(" Required"));
+      const uniqueLabel = document.createElement("label");
+      const unique = document.createElement("input");
+      unique.type = "checkbox";
+      unique.checked = Boolean(field.unique);
+      uniqueLabel.append(unique, document.createTextNode(" Unique"));
+      const min = document.createElement("input");
+      min.className = "form-control form-control-sm";
+      min.placeholder = "Minimum";
+      min.value = field.min ?? "";
+      min.setAttribute("aria-label", "Minimum value");
+      const max = document.createElement("input");
+      max.className = "form-control form-control-sm";
+      max.placeholder = "Maximum";
+      max.value = field.max ?? "";
+      max.setAttribute("aria-label", "Maximum value");
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "btn btn-sm btn-outline-secondary";
+      remove.textContent = "Remove";
+      remove.disabled = schema.length <= 1;
+      remove.addEventListener("click", () => {
+        schema.splice(fieldIndex, 1);
+        update();
+        render();
+      });
+      const updateField = () => {
+        schema[fieldIndex] = {
+          name: name.value.trim(),
+          type: type.value,
+          required: required.checked,
+          unique: unique.checked,
+          ...(min.value.trim() ? { min: min.value.trim() } : {}),
+          ...(max.value.trim() ? { max: max.value.trim() } : {})
+        };
+        update();
+      };
+      [name, type, required, unique, min, max].forEach(control => control.addEventListener("change", updateField));
+      row.append(name, type, requiredLabel, uniqueLabel, min, max, remove);
+      editor.append(row);
+    });
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "btn btn-sm btn-outline-primary mt-2";
+    add.textContent = "Add input field";
+    add.disabled = schema.length >= 50;
+    add.addEventListener("click", () => {
+      schema.push({ name: "new_field_" + (schema.length + 1), type: "text", required: false, unique: false });
+      update();
+      render();
+    });
+    editor.append(add);
+    return editor;
+  };
+
   const makeMappingEditor = (node, index) => {
     const config = configOf(node);
     const mapping = config.mapping || {};
     const editor = document.createElement("div");
     editor.className = "mapping-editor";
-    const fields = [
-      ["customer_name", "Customer name"],
-      ["customer_id", "Customer ID"],
-      ["email", "Email"],
-      ["plan", "Plan"]
-    ];
-    fields.forEach(([target, label]) => {
+    const heading = document.createElement("strong");
+    heading.textContent = "Map source columns";
+    editor.append(heading);
+    schemaForWorkflow().forEach(field => {
       const wrap = document.createElement("label");
       wrap.className = "mapping-field";
       const caption = document.createElement("span");
-      caption.textContent = target + " ← " + label;
+      caption.textContent = field.name + " ← source CSV column";
       const input = document.createElement("input");
       input.className = "form-control form-control-sm";
-      input.value = mapping[target] || "";
+      input.value = mapping[field.name] || "";
       input.placeholder = "Source CSV column";
       input.maxLength = 100;
-      input.setAttribute("aria-label", "Source CSV column for " + label);
+      input.setAttribute("aria-label", "Source CSV column for " + field.name);
       input.addEventListener("change", () => {
         const next = { ...(config.mapping || {}) };
-        if (input.value.trim()) next[target] = input.value.trim();
-        else delete next[target];
+        if (input.value.trim()) next[field.name] = input.value.trim();
+        else delete next[field.name];
         nodes[index] = { type: "map_fields", mapping: next };
         markDirty();
       });
@@ -336,6 +444,10 @@
       desc.textContent = info[1];
       copy.append(title, desc);
       node.append(icon, copy);
+      if (type === "validate_rows") {
+        node.classList.add("workflow-node-mapping");
+        node.append(makeSchemaEditor(nodeData, index));
+      }
       if (type === "set_variables" || type === "parse_json") {
         node.classList.add("workflow-node-config");
         node.append(makeJsonConfigEditor(nodeData, index, type));
@@ -527,7 +639,7 @@
         : type === "ai_process"
           ? { type, field: "description", output_variable: "ai_summary", details_variable: "ai_key_details" }
         : type === "map_fields"
-          ? { type, mapping: { customer_name: "name", customer_id: "id", email: "email", plan: "plan" } }
+          ? { type, mapping: Object.fromEntries(schemaForWorkflow().map(field => [field.name, field.name])) }
           : type;
       let insertAt = reportIndex < 0 ? nodes.length : reportIndex;
       if (type === "map_fields" && mappingIndex >= 0) insertAt = mappingIndex;
