@@ -461,6 +461,115 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+    def test_validation_scope_first_n_only_validates_requested_rows(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "First", "customer_id": "C001", "email": "first@example.com", "plan": "VIP"},
+                {"customer_name": "Second", "customer_id": "C002", "email": "invalid-email", "plan": "VIP"},
+                {"customer_name": "Third", "customer_id": "C003", "email": "third@example.com", "plan": "VIP"},
+            ])
+            result = run_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "first_n", "count": 2}},
+                "execution_report",
+            ], source_path, folder)
+            self.assertEqual(result["status"], "success")
+            validation = result["steps"][2]
+            self.assertEqual(validation["validated_rows"], 2)
+            self.assertEqual(validation["unvalidated_rows"], 1)
+            self.assertEqual(validation["invalid_rows"][0]["row"], 3)
+            self.assertIn("1 row(s) outside the scope were not validated", validation["message"])
+
+    def test_validation_scope_range_uses_data_row_numbers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "First", "customer_id": "C001", "email": "first@example.com", "plan": "VIP"},
+                {"customer_name": "Second", "customer_id": "C002", "email": "invalid-email", "plan": "VIP"},
+                {"customer_name": "Third", "customer_id": "C003", "email": "third@example.com", "plan": "VIP"},
+            ])
+            result = run_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "range", "start": 2, "end": 3}},
+                "execution_report",
+            ], source_path, folder)
+            validation = result["steps"][2]
+            self.assertEqual(validation["validated_rows"], 2)
+            self.assertEqual(validation["invalid_rows"][0]["row"], 3)
+
+    def test_validation_scope_selected_rows(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "First", "customer_id": "C001", "email": "first@example.com", "plan": "VIP"},
+                {"customer_name": "Second", "customer_id": "C002", "email": "invalid-email", "plan": "VIP"},
+                {"customer_name": "Third", "customer_id": "C003", "email": "third@example.com", "plan": "VIP"},
+            ])
+            result = run_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "selected", "rows": [1, 3]}},
+                "execution_report",
+            ], source_path, folder)
+            validation = result["steps"][2]
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(validation["validated_rows"], 2)
+            self.assertEqual(validation["unvalidated_rows"], 1)
+            self.assertEqual(validation["invalid_rows"], [])
+
+    def test_validation_scope_rejects_duplicate_selected_rows(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "selected", "rows": [1, 1]}},
+                "execution_report",
+            ])
+
+    def test_validation_scope_rejects_invalid_selected_row_numbers(self):
+        invalid_selections = ([0], [-1], [], ["2"], [True], [1, 1])
+        for rows in invalid_selections:
+            with self.subTest(rows=rows):
+                with self.assertRaises(ValueError):
+                    validate_workflow([
+                        "manual_trigger", "read_csv",
+                        {"type": "validate_rows", "scope": {"mode": "selected", "rows": rows}},
+                        "execution_report",
+                    ])
+
+    def test_validation_scope_rejects_too_many_selected_rows(self):
+        with self.assertRaises(ValueError):
+            validate_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "selected", "rows": list(range(1, 10002))}},
+                "execution_report",
+            ])
+
+    def test_validation_scope_rejects_invalid_selected_rows(self):
+        invalid_selections = [[], [0], [-1], [True], ["2"]]
+        for rows in invalid_selections:
+            with self.subTest(rows=rows):
+                with self.assertRaises(ValueError):
+                    validate_workflow([
+                        "manual_trigger", "read_csv",
+                        {"type": "validate_rows", "scope": {"mode": "selected", "rows": rows}},
+                        "execution_report",
+                    ])
+
+    def test_validation_scope_selected_rows_are_sorted_for_processing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "First", "customer_id": "C001", "email": "first@example.com", "plan": "VIP"},
+                {"customer_name": "Second", "customer_id": "C002", "email": "second@example.com", "plan": "VIP"},
+                {"customer_name": "Third", "customer_id": "C003", "email": "third@example.com", "plan": "VIP"},
+            ])
+            result = run_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "selected", "rows": [3, 1]}},
+                "execution_report",
+            ], source_path, folder)
+            validation = result["steps"][2]
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(validation["validated_rows"], 2)
+            self.assertEqual(validation["unvalidated_rows"], 1)
+            self.assertEqual(validation["message"].split(";")[0], "Validated 2 of 2 selected row(s)")
+
     def test_runs_sequential_csv_validation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
