@@ -97,6 +97,12 @@
       name.placeholder = "field_name";
       name.maxLength = 64;
       name.setAttribute("aria-label", "Input field name");
+      const label = document.createElement("input");
+      label.className = "form-control form-control-sm";
+      label.value = field.label || "";
+      label.placeholder = "Display label";
+      label.maxLength = 100;
+      label.setAttribute("aria-label", "Display label");
       const type = document.createElement("select");
       type.className = "form-select form-select-sm";
       ["text", "email", "number", "integer", "boolean", "date"].forEach(value => {
@@ -126,6 +132,18 @@
       max.placeholder = "Maximum";
       max.value = field.max ?? "";
       max.setAttribute("aria-label", "Maximum value");
+      const defaultValue = document.createElement("input");
+      defaultValue.className = "form-control form-control-sm";
+      defaultValue.placeholder = "Default value";
+      defaultValue.value = field.default ?? "";
+      defaultValue.maxLength = 1000;
+      defaultValue.setAttribute("aria-label", "Default value");
+      const errorMessage = document.createElement("input");
+      errorMessage.className = "form-control form-control-sm";
+      errorMessage.placeholder = "Custom error (optional)";
+      errorMessage.value = field.error_message || "";
+      errorMessage.maxLength = 200;
+      errorMessage.setAttribute("aria-label", "Custom validation error message");
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "btn btn-sm btn-outline-secondary";
@@ -139,16 +157,19 @@
       const updateField = () => {
         schema[fieldIndex] = {
           name: name.value.trim(),
+          label: label.value.trim(),
           type: type.value,
           required: required.checked,
           unique: unique.checked,
           ...(min.value.trim() ? { min: min.value.trim() } : {}),
-          ...(max.value.trim() ? { max: max.value.trim() } : {})
+          ...(max.value.trim() ? { max: max.value.trim() } : {}),
+          ...(defaultValue.value.trim() ? { default: defaultValue.value } : {}),
+          ...(errorMessage.value.trim() ? { error_message: errorMessage.value.trim() } : {})
         };
         update();
       };
-      [name, type, required, unique, min, max].forEach(control => control.addEventListener("change", updateField));
-      row.append(name, type, requiredLabel, uniqueLabel, min, max, remove);
+      [name, label, type, required, unique, min, max, defaultValue, errorMessage].forEach(control => control.addEventListener("change", updateField));
+      row.append(name, label, type, requiredLabel, uniqueLabel, min, max, defaultValue, errorMessage, remove);
       editor.append(row);
     });
     const add = document.createElement("button");
