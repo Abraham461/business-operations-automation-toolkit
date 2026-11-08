@@ -49,7 +49,7 @@ def documents_generate():
         flash("Choose a CSV file first.", "error")
         return redirect(url_for("documents"))
     if not uploaded_file.filename.lower().endswith(".csv"):
-        flash("For this MVP, upload a CSV file.", "error")
+        flash("Please upload a valid CSV file.", "error")
         return redirect(url_for("documents"))
 
     safe_name = secure_filename(uploaded_file.filename)
@@ -58,8 +58,8 @@ def documents_generate():
 
     try:
         output_path, count = generate_customer_pdfs(path, app.config["OUTPUT_FOLDER"])
-        flash(f"Generated {count} sample customer PDF(s).", "success")
-        return send_file(output_path, as_attachment=True, download_name="customer_documents.zip")
+        flash(f"Generated {count} PDF record(s) from your CSV.", "success")
+        return send_file(output_path, as_attachment=True, download_name="csv_records.zip")
     except (ValueError, OSError) as exc:
         app.logger.warning("Document generation rejected or failed: %s", exc)
         flash(f"Could not generate documents: {exc}", "error")
