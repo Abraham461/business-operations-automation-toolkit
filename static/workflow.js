@@ -107,7 +107,7 @@
       const mode = scopeMode.value;
       if (mode === "selected") {
         const tokens = rowsInput.value.split(",").map(value => value.trim());
-        const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
+        const parsedRows = tokens.map(value => /^\d+$/.test(value) ? Number(value) : NaN);
         const valid = tokens.length > 0 && tokens.every(Boolean)
           && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
           && new Set(parsedRows).size === parsedRows.length;
@@ -140,7 +140,12 @@
       if (scopeMode.value === "selected") scopeInputs.append(rowsInput);
     };
     scopeMode.addEventListener("change", updateScope);
-    [countInput, startInput, endInput, rowsInput].forEach(control => control.addEventListener("change", updateScope));
+    [countInput, startInput, endInput, rowsInput].forEach(control => {
+      control.addEventListener("change", updateScope);
+      if (control === rowsInput) control.addEventListener("input", () => {
+        if (scopeMode.value === "selected") updateScope();
+      });
+    });
     showScopeInputs();
     scopePanel.append(scopeTitle, scopeMode, scopeInputs, scopeHint);
     editor.append(scopePanel);
@@ -810,6 +815,12 @@
   savedSelect.addEventListener("change", loadWorkflow);
 
   document.getElementById("run-workflow").addEventListener("click", async () => {
+    const invalidScopeInput = list.querySelector(".validation-scope-inputs input:invalid");
+    if (invalidScopeInput) {
+      invalidScopeInput.reportValidity();
+      result.textContent = "Correct the validation row selection before running the workflow.";
+      return;
+    }
     const file = document.getElementById("workflow-file").files[0];
     if (!file) { result.textContent = "Choose a CSV file before running the workflow."; return; }
     const button = document.getElementById("run-workflow");
