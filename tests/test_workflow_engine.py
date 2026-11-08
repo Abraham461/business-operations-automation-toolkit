@@ -552,6 +552,24 @@ class WorkflowEngineTests(unittest.TestCase):
                         "execution_report",
                     ])
 
+    def test_validation_scope_selected_rows_are_sorted_for_processing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source_path = self._make_csv(folder, [
+                {"customer_name": "First", "customer_id": "C001", "email": "first@example.com", "plan": "VIP"},
+                {"customer_name": "Second", "customer_id": "C002", "email": "second@example.com", "plan": "VIP"},
+                {"customer_name": "Third", "customer_id": "C003", "email": "third@example.com", "plan": "VIP"},
+            ])
+            result = run_workflow([
+                "manual_trigger", "read_csv",
+                {"type": "validate_rows", "scope": {"mode": "selected", "rows": [3, 1]}},
+                "execution_report",
+            ], source_path, folder)
+            validation = result["steps"][2]
+            self.assertEqual(result["status"], "success")
+            self.assertEqual(validation["validated_rows"], 2)
+            self.assertEqual(validation["unvalidated_rows"], 1)
+            self.assertEqual(validation["message"].split(";")[0], "Validated 2 of 2 selected row(s)")
+
     def test_runs_sequential_csv_validation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
