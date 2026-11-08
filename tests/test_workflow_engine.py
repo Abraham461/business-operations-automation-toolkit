@@ -541,6 +541,17 @@ class WorkflowEngineTests(unittest.TestCase):
                 "execution_report",
             ])
 
+    def test_validation_scope_rejects_invalid_selected_rows(self):
+        invalid_selections = [[], [0], [-1], [True], ["2"]]
+        for rows in invalid_selections:
+            with self.subTest(rows=rows):
+                with self.assertRaises(ValueError):
+                    validate_workflow([
+                        "manual_trigger", "read_csv",
+                        {"type": "validate_rows", "scope": {"mode": "selected", "rows": rows}},
+                        "execution_report",
+                    ])
+
     def test_runs_sequential_csv_validation(self):
         with tempfile.TemporaryDirectory() as folder:
             source_path = self._make_csv(folder, [{
