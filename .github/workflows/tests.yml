@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main", "feature/workflow-persistence", "feature/opspilot-workflow-platform"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "feature/pdf-to-excel-automation"]
 
 jobs:
   test:
