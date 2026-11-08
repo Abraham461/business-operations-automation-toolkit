@@ -36,6 +36,31 @@
   const history = document.getElementById("workflow-history");
   const typeOf = node => typeof node === "string" ? node : node.type;
   const configOf = node => typeof node === "string" ? { type: node } : node;
+  let refreshValidationRowPicker = () => {};
+
+  const parseCsvPreview = text => {
+    const rows = [];
+    let row = [], field = "", quoted = false;
+    const source = text.replace(/^\\uFEFF/, "");
+    for (let i = 0; i < source.length; i += 1) {
+      const char = source[i];
+      if (quoted) {
+        if (char === '"' && source[i + 1] === '"') { field += '"'; i += 1; }
+        else if (char === '"') quoted = false;
+        else field += char;
+      } else if (char === '"' && field.length === 0) quoted = true;
+      else if (char === ",") { row.push(field); field = ""; }
+      else if (char === "\\n" || char === "\\r") {
+        if (char === "\\r" && source[i + 1] === "\\n") i += 1;
+        row.push(field); field = "";
+        if (row.some(value => value.trim())) rows.push(row);
+        row = [];
+      } else field += char;
+    }
+    row.push(field);
+    if (row.some(value => value.trim())) rows.push(row);
+    return rows;
+  };
 
   const populateVersions = (workflow, selectedId) => {
     versionSelect.replaceChildren();
@@ -103,6 +128,66 @@
     const endInput = document.createElement("input"); endInput.className = "form-control form-control-sm"; endInput.type = "number"; endInput.min = "1"; endInput.placeholder = "End row"; endInput.value = scope.end || 100;
     const rowsInput = document.createElement("input"); rowsInput.className = "form-control form-control-sm"; rowsInput.placeholder = "e.g. 1, 4, 8, 12"; rowsInput.value = Array.isArray(scope.rows) ? scope.rows.join(", ") : "";
     const scopeHint = document.createElement("small"); scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and are reported as not validated.";
+    const rowPicker = document.createElement("div");
+    rowPicker.className = "validation-row-picker";
+    const pickerHeading = document.createElement("div");
+    pickerHeading.className = "validation-row-picker-heading";
+    const pickerTitle = document.createElement("strong");
+    pickerTitle.textContent = "Choose rows from your CSV";
+    const pickerSummary = document.createElement("span");
+    pickerSummary.textContent = "Upload a CSV to preview rows";
+    pickerHeading.append(pickerTitle, pickerSummary);
+    const pickerList = document.createElement("div");
+    pickerList.className = "validation-row-picker-list";
+    rowPicker.append(pickerHeading, pickerList);
+    let previewRows = [];
+    const renderRowPicker = () => {
+      pickerList.replaceChildren();
+      if (!previewRows.length) {
+        const empty = document.createElement("small");
+        empty.textContent = "Choose an input CSV below to see its rows here. You can also type row numbers above.";
+        pickerList.append(empty);
+        pickerSummary.textContent = "No CSV preview";
+        return;
+      }
+      const dataRows = previewRows.slice(1);
+      const selected = new Set(Array.isArray(scope.rows) ? scope.rows : []);
+      pickerSummary.textContent = dataRows.length + " data row(s) in preview";
+      dataRows.slice(0, 50).forEach((values, rowIndex) => {
+        const rowNumber = rowIndex + 1;
+        const label = document.createElement("label");
+        label.className = "validation-row-option";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = selected.has(rowNumber);
+        checkbox.addEventListener("change", () => {
+          const visibleSelected = Array.from(pickerList.querySelectorAll("input:checked")).map(input => Number(input.value));
+          const hiddenSelected = (scope.rows || []).filter(number => number > 50);
+          scope.mode = "selected";
+          scope.rows = [...new Set([...hiddenSelected, ...visibleSelected])].sort((a, b) => a - b);
+          scopeMode.value = "selected";
+          rowsInput.value = scope.rows.join(", ");
+          rowsInput.setCustomValidity("");
+          showScopeInputs();
+          update();
+          renderRowPicker();
+        });
+        checkbox.value = String(rowNumber);
+        const number = document.createElement("span");
+        number.className = "validation-row-number";
+        number.textContent = "Row " + rowNumber;
+        const preview = document.createElement("span");
+        preview.className = "validation-row-preview";
+        preview.textContent = values.slice(0, 3).map(value => String(value).slice(0, 42)).join(" · ");
+        label.append(checkbox, number, preview);
+        pickerList.append(label);
+      });
+      if (dataRows.length > 50) {
+        const note = document.createElement("small");
+        note.textContent = "Showing the first 50 rows. Enter higher row numbers manually above.";
+        pickerList.append(note);
+      }
+    };
     const updateScope = () => {
       const mode = scopeMode.value;
       if (mode === "selected") {
@@ -132,12 +217,14 @@
       scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and reported as not validated.";
       update();
       showScopeInputs();
+      if (mode === "selected") renderRowPicker();
     };
     const showScopeInputs = () => {
       scopeInputs.replaceChildren();
       if (scopeMode.value === "first_n") scopeInputs.append(countInput);
       if (scopeMode.value === "range") scopeInputs.append(startInput, endInput);
       if (scopeMode.value === "selected") scopeInputs.append(rowsInput);
+      rowPicker.hidden = scopeMode.value !== "selected";
     };
     scopeMode.addEventListener("change", updateScope);
     [countInput, startInput, endInput, rowsInput].forEach(control => {
@@ -147,9 +234,30 @@
       });
     });
     showScopeInputs();
-    scopePanel.append(scopeTitle, scopeMode, scopeInputs, scopeHint);
+    scopePanel.append(scopeTitle, scopeMode, scopeInputs, rowPicker, scopeHint);
     editor.append(scopePanel);
     const scope = structuredClone(config.scope || { mode: "all" });
+    const refreshPickerForFile = async () => {
+      const file = document.getElementById("workflow-file").files[0];
+      previewRows = [];
+      if (!file) { renderRowPicker(); return; }
+      try {
+        previewRows = parseCsvPreview(await file.text());
+        if (previewRows.length < 2) {
+          pickerList.replaceChildren();
+          const empty = document.createElement("small");
+          empty.textContent = "This CSV does not contain any data rows.";
+          pickerList.append(empty);
+          pickerSummary.textContent = "No data rows";
+          return;
+        }
+        renderRowPicker();
+      } catch (_error) {
+        pickerList.textContent = "Could not preview this CSV. You can still enter row numbers manually.";
+        pickerSummary.textContent = "Preview unavailable";
+      }
+    };
+    refreshValidationRowPicker = refreshPickerForFile;
     const update = () => {
       nodes[index] = { type: "validate_rows", schema, scope };
       markDirty();
@@ -847,6 +955,7 @@
     render();
   });
   document.getElementById("save-workflow").addEventListener("click", saveWorkflow);
+  document.getElementById("workflow-file").addEventListener("change", () => refreshValidationRowPicker());
   savedSelect.addEventListener("change", loadWorkflow);
 
   document.getElementById("run-workflow").addEventListener("click", async () => {
@@ -932,6 +1041,7 @@
   }
 
   render();
+  refreshValidationRowPicker();
   populateVersions({ versions: [] }, null);
   refreshLibrary();
 })();
