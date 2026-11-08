@@ -143,7 +143,7 @@
     selectVisible.textContent = "Select visible";
     const clearSelected = document.createElement("button");
     clearSelected.type = "button";
-    clearSelected.textContent = "Clear selection";
+    clearSelected.textContent = "Clear visible";
     pickerActions.append(selectVisible, clearSelected);
     pickerHeading.append(pickerTitle, pickerSummary, pickerActions);
     const pickerList = document.createElement("div");
