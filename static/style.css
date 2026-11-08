@@ -457,3 +457,22 @@ textarea.form-control{resize:vertical;min-height:110px}
 .workflow-drag-handle{cursor:grab;touch-action:none}
 .workflow-drag-handle:active{cursor:grabbing}
 .workflow-node-row.is-drop-target .workflow-step-number{background:#e7edff;color:#4268df}
+
+
+/* Validation CSV row picker */
+.validation-row-picker{display:grid;gap:9px;padding:11px;border:1px solid #e2e9f3;border-radius:9px;background:#fff}
+.validation-row-picker[hidden]{display:none!important}
+.validation-row-picker-heading{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.validation-row-picker-heading>strong{font-size:10px;color:#34445c}
+.validation-row-picker-heading>span{font-size:9px;color:#8491a4}
+.validation-row-picker-actions{display:flex;gap:6px;margin-left:auto}
+.validation-row-picker-actions button{border:1px solid #e4eaf2;border-radius:6px;background:#f8faff;color:#526581;padding:5px 8px;font-size:9px}
+.validation-row-picker-actions button:hover{border-color:#cbd7ee;background:#edf3ff}
+.validation-row-picker-list{display:grid;gap:5px;max-height:260px;overflow:auto;padding:2px}
+.validation-row-option{display:grid;grid-template-columns:16px 48px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;border:1px solid #edf1f6;border-radius:6px;cursor:pointer}
+.validation-row-option:has(input:checked){border-color:#b8c9f6;background:#f4f7ff}
+.validation-row-option input{margin:0;accent-color:#536fce}
+.validation-row-number{font-size:9px;font-weight:700;color:#66758c}
+.validation-row-preview{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:#8793a5}
+.validation-row-picker-list>small{font-size:9px;line-height:1.5;color:#8793a5;padding:5px}
+@media(max-width:575.98px){.validation-row-picker-heading{align-items:flex-start}.validation-row-picker-actions{width:100%;margin-left:0}.validation-row-picker-actions button{flex:1}.validation-row-option{grid-template-columns:16px 42px minmax(0,1fr)}}
