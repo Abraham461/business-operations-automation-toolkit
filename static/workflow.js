@@ -102,6 +102,7 @@
 
   const makeSchemaEditor = (node, index) => {
     const config = configOf(node);
+    const scope = structuredClone(config.scope || { mode: "all" });
     const schema = Array.isArray(config.schema) && config.schema.length
       ? structuredClone(config.schema) : defaultSchema();
     const editor = document.createElement("div");
@@ -175,7 +176,7 @@
       }
       const dataRows = previewRows.slice(1);
       const selected = new Set(Array.isArray(scope.rows) ? scope.rows : []);
-      pickerSummary.textContent = dataRows.length + " data row(s) in preview";
+      pickerSummary.textContent = selected.size + " selected · " + dataRows.length + " data row(s) in preview";
       dataRows.slice(0, 50).forEach((values, rowIndex) => {
         const rowNumber = rowIndex + 1;
         const label = document.createElement("label");
@@ -261,16 +262,19 @@
       rowPicker.hidden = scopeMode.value !== "selected";
     };
     scopeMode.addEventListener("change", updateScope);
-    [countInput, startInput, endInput, rowsInput].forEach(control => {
-      control.addEventListener("change", updateScope);
-      if (control === rowsInput) control.addEventListener("input", () => {
-        if (scopeMode.value === "selected") updateScope();
-      });
+    [countInput, startInput, endInput, rowsInput].forEach(control => control.addEventListener("change", updateScope));
+    rowsInput.addEventListener("input", () => {
+      if (scopeMode.value !== "selected") return;
+      const tokens = rowsInput.value.split(",").map(value => value.trim());
+      const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
+      const valid = tokens.length > 0 && tokens.every(Boolean)
+        && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
+        && new Set(parsedRows).size === parsedRows.length;
+      rowsInput.setCustomValidity(valid ? "" : "Enter unique positive row numbers separated by commas, for example 1, 4, 8.");
     });
     showScopeInputs();
     scopePanel.append(scopeTitle, scopeMode, scopeInputs, rowPicker, scopeHint);
     editor.append(scopePanel);
-    const scope = structuredClone(config.scope || { mode: "all" });
     const refreshPickerForFile = async () => {
       const file = document.getElementById("workflow-file").files[0];
       previewRows = [];
