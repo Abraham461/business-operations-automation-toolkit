@@ -218,10 +218,6 @@ def validate_workflow(nodes):
         selected_rows = scope.get("rows")
         if not isinstance(selected_rows, list) or not selected_rows or len(selected_rows) > 10000 or any(not isinstance(row, int) or isinstance(row, bool) or row < 1 for row in selected_rows) or len(set(selected_rows)) != len(selected_rows):
             raise ValueError("Enter one or more unique, positive row numbers to validate.")
-    if scope_mode == "selected":
-        selected_rows = scope.get("rows")
-        if not isinstance(selected_rows, list) or not selected_rows or len(selected_rows) > 10000 or any(not isinstance(row, int) or isinstance(row, bool) or row < 1 for row in selected_rows) or len(set(selected_rows)) != len(selected_rows):
-            raise ValueError("Enter one or more unique, positive row numbers to validate.")
     if types.count("map_fields") > 1:
         raise ValueError("A workflow can contain only one Map fields action.")
     if "map_fields" in types:
