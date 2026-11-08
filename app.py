@@ -11,10 +11,12 @@ load_dotenv()
 from modules.ai_processing.processor import process_document_text
 from modules.api_testing.runner import run_api_test
 from modules.document_automation.generator import generate_customer_pdfs
+from modules.document_automation.routes import pdf_conversion_bp
 from modules.workflow_engine.engine import run_workflow, validate_workflow
 from modules.workflow_engine.store import WorkflowStore
 
 app = Flask(__name__)
+app.register_blueprint(pdf_conversion_bp)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-only-change-me")
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = "uploads"
