@@ -92,6 +92,17 @@ def _validate_schema(schema):
                     raise ValueError(f"The {limit} rule for '{name}' must be numeric.") from exc
                 if numeric < 0:
                     raise ValueError(f"The {limit} rule for '{name}' cannot be negative.")
+                if limit in {"min_length", "max_length"} and not numeric.is_integer():
+                    raise ValueError(f"The {limit} rule for '{name}' must be a whole number.")
+        kind = field.get("type", "text")
+        if kind not in {"number", "integer"} and (
+            field.get("min") not in (None, "") or field.get("max") not in (None, "")
+        ):
+            raise ValueError(f"Numeric minimum/maximum rules require a number or integer field: '{name}'.")
+        if kind != "text" and (
+            field.get("min_length") not in (None, "") or field.get("max_length") not in (None, "")
+        ):
+            raise ValueError(f"Text length rules require a text field: '{name}'.")
         if field.get("min") not in (None, "") and field.get("max") not in (None, ""):
             if float(field["min"]) > float(field["max"]):
                 raise ValueError(f"The minimum for '{name}' cannot exceed its maximum.")
