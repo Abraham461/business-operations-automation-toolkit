@@ -440,3 +440,12 @@ textarea.form-control{resize:vertical;min-height:110px}
 .workflow-node-control:hover:not(:disabled){background:#edf2ff;border-color:#cbd7fb;color:#4268df}
 .workflow-node-control:disabled{opacity:.3;cursor:not-allowed}
 .workflow-studio .node-remove{margin-left:0}
+
+
+/* Validation scope controls */
+.validation-scope-editor{display:grid;gap:8px;padding:12px;margin:12px 0;border:1px solid #e5eaf2;border-radius:10px;background:#f8faff}
+.validation-scope-editor>strong{font-size:12px;color:#34445c}
+.validation-scope-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.validation-scope-inputs input:only-child{grid-column:1/-1}
+.validation-scope-editor small{font-size:10px;line-height:1.5;color:#77849a}
+@media(max-width:575.98px){.validation-scope-inputs{grid-template-columns:1fr}}
