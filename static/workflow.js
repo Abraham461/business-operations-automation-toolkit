@@ -475,7 +475,8 @@
       const desc = document.createElement("small");
       desc.textContent = info[1];
       copy.append(title, desc);
-      node.append(icon, copy);\n      node.setAttribute("data-step-type", type);
+      node.append(icon, copy);
+      node.setAttribute("data-step-type", type);
       if (type === "validate_rows") {
         node.classList.add("workflow-node-mapping");
         node.append(makeSchemaEditor(nodeData, index));
