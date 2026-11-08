@@ -15,7 +15,7 @@
   };
   const defaults = [
     "manual_trigger", "read_csv",
-    { type: "validate_rows", schema: [
+    { type: "validate_rows", scope: { mode: "all" }, schema: [
       { name: "customer_name", type: "text", required: true, unique: false },
       { name: "customer_id", type: "text", required: true, unique: true },
       { name: "email", type: "email", required: true, unique: false },
@@ -86,8 +86,45 @@
     const help = document.createElement("small");
     help.textContent = "Define the columns this workflow expects. Required and unique rules are checked before later actions run.";
     editor.append(heading, help);
+    const scopePanel = document.createElement("div");
+    scopePanel.className = "validation-scope-editor";
+    const scopeTitle = document.createElement("strong");
+    scopeTitle.textContent = "Rows to validate";
+    const scopeMode = document.createElement("select");
+    scopeMode.className = "form-select form-select-sm";
+    [["all", "All rows"], ["first_n", "First N rows"], ["range", "Specific row range"], ["selected", "Selected row numbers"]].forEach(([value, label]) => {
+      const option = document.createElement("option"); option.value = value; option.textContent = label; scopeMode.append(option);
+    });
+    scopeMode.value = scope.mode || "all";
+    const scopeInputs = document.createElement("div");
+    scopeInputs.className = "validation-scope-inputs";
+    const countInput = document.createElement("input"); countInput.className = "form-control form-control-sm"; countInput.type = "number"; countInput.min = "1"; countInput.placeholder = "Number of rows"; countInput.value = scope.count || 100;
+    const startInput = document.createElement("input"); startInput.className = "form-control form-control-sm"; startInput.type = "number"; startInput.min = "1"; startInput.placeholder = "Start row"; startInput.value = scope.start || 1;
+    const endInput = document.createElement("input"); endInput.className = "form-control form-control-sm"; endInput.type = "number"; endInput.min = "1"; endInput.placeholder = "End row"; endInput.value = scope.end || 100;
+    const rowsInput = document.createElement("input"); rowsInput.className = "form-control form-control-sm"; rowsInput.placeholder = "e.g. 1, 4, 8, 12"; rowsInput.value = Array.isArray(scope.rows) ? scope.rows.join(", ") : "";
+    const scopeHint = document.createElement("small"); scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and are reported as not validated.";
+    const updateScope = () => {
+      const mode = scopeMode.value;
+      if (mode === "all") { Object.assign(scope, { mode }); delete scope.count; delete scope.start; delete scope.end; delete scope.rows; }
+      if (mode === "first_n") { Object.assign(scope, { mode, count: Number(countInput.value) }); delete scope.start; delete scope.end; delete scope.rows; }
+      if (mode === "range") { Object.assign(scope, { mode, start: Number(startInput.value), end: Number(endInput.value) }); delete scope.count; delete scope.rows; }
+      if (mode === "selected") { Object.assign(scope, { mode, rows: rowsInput.value.split(",").map(value => Number(value.trim())).filter(Number.isInteger) }); delete scope.count; delete scope.start; delete scope.end; }
+      update(); showScopeInputs();
+    };
+    const showScopeInputs = () => {
+      scopeInputs.replaceChildren();
+      if (scopeMode.value === "first_n") scopeInputs.append(countInput);
+      if (scopeMode.value === "range") scopeInputs.append(startInput, endInput);
+      if (scopeMode.value === "selected") scopeInputs.append(rowsInput);
+    };
+    scopeMode.addEventListener("change", updateScope);
+    [countInput, startInput, endInput, rowsInput].forEach(control => control.addEventListener("change", updateScope));
+    showScopeInputs();
+    scopePanel.append(scopeTitle, scopeMode, scopeInputs, scopeHint);
+    editor.append(scopePanel);
+    const scope = structuredClone(config.scope || { mode: "all" });
     const update = () => {
-      nodes[index] = { type: "validate_rows", schema };
+      nodes[index] = { type: "validate_rows", schema, scope };
       markDirty();
     };
     schema.forEach((field, fieldIndex) => {
