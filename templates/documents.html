@@ -33,12 +33,12 @@
 <div class="row g-4">
   <div class="col-lg-8">
     <section class="surface-card">
-      <div class="card-heading"><div><span class="card-kicker">EXISTING FEATURE</span><h2>CSV to customer PDF</h2><p>Keep using the original sample generator with its required customer columns.</p></div><span class="step-number">02</span></div>
+      <div class="card-heading"><div><span class="card-kicker">EXISTING FEATURE</span><h2>CSV to PDF records</h2><p>Generate one PDF for each non-empty row. Any unique column headers are supported.</p></div><span class="step-number">02</span></div>
       <form method="post" action="/documents/generate" enctype="multipart/form-data">
         <label class="form-label" for="customer-file">Customer CSV file</label>
         <input id="customer-file" class="form-control mb-3" type="file" name="file" accept=".csv" required>
-        <div class="required-fields"><span class="required-title">REQUIRED COLUMNS</span><div class="field-chips"><code>customer_name</code><code>customer_id</code><code>email</code><code>plan</code></div></div>
-        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-file-earmark-pdf me-2"></i>Generate customer PDFs</button>
+        <div class="bottom-strip mb-3"><i class="bi bi-check2-circle strip-icon"></i><div><strong>No fixed schema required</strong><p>Use your own column names, such as product, quantity, invoice number, date, amount, or any other fields. Make sure the first row contains unique column headers.</p></div></div>
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-file-earmark-pdf me-2"></i>Generate PDF records</button>
         <a class="text-link ms-3" href="/static/sample_customers.csv" download>Download sample CSV <i class="bi bi-download"></i></a>
       </form>
     </section>
