@@ -105,11 +105,33 @@
     const scopeHint = document.createElement("small"); scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and are reported as not validated.";
     const updateScope = () => {
       const mode = scopeMode.value;
-      if (mode === "all") { Object.assign(scope, { mode }); delete scope.count; delete scope.start; delete scope.end; delete scope.rows; }
-      if (mode === "first_n") { Object.assign(scope, { mode, count: Number(countInput.value) }); delete scope.start; delete scope.end; delete scope.rows; }
-      if (mode === "range") { Object.assign(scope, { mode, start: Number(startInput.value), end: Number(endInput.value) }); delete scope.count; delete scope.rows; }
-      if (mode === "selected") { Object.assign(scope, { mode, rows: rowsInput.value.split(",").map(value => Number(value.trim())).filter(Number.isInteger) }); delete scope.count; delete scope.start; delete scope.end; }
-      update(); showScopeInputs();
+      if (mode === "selected") {
+        const tokens = rowsInput.value.split(",").map(value => value.trim());
+        const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
+        const valid = tokens.length > 0 && tokens.every(Boolean)
+          && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
+          && new Set(parsedRows).size === parsedRows.length;
+        rowsInput.setCustomValidity(valid ? "" : "Enter unique positive row numbers separated by commas, for example 1, 4, 8.");
+        if (!valid) {
+          scopeHint.textContent = "Enter unique positive row numbers separated by commas. Row 1 is the first data row after the CSV header.";
+          return;
+        }
+        Object.assign(scope, { mode, rows: parsedRows });
+        delete scope.count; delete scope.start; delete scope.end;
+      } else if (mode === "first_n") {
+        Object.assign(scope, { mode, count: Number(countInput.value) });
+        delete scope.start; delete scope.end; delete scope.rows;
+      } else if (mode === "range") {
+        Object.assign(scope, { mode, start: Number(startInput.value), end: Number(endInput.value) });
+        delete scope.count; delete scope.rows;
+      } else {
+        Object.assign(scope, { mode });
+        delete scope.count; delete scope.start; delete scope.end; delete scope.rows;
+      }
+      rowsInput.setCustomValidity("");
+      scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and reported as not validated.";
+      update();
+      showScopeInputs();
     };
     const showScopeInputs = () => {
       scopeInputs.replaceChildren();
