@@ -2,7 +2,7 @@ name: Python tests
 
 on:
   push:
-    branches: ["main", "feature/workflow-persistence"]
+    branches: ["main", "feature/workflow-persistence", "feature/opspilot-workflow-platform"]
   pull_request:
     branches: ["main"]
 
