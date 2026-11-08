@@ -150,7 +150,7 @@ def _validate_rows(records, headers, schema):
                 field_errors.append(f"{label} is required")
             elif value:
                 try:
-                    if kind == "email" and not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", value):
+                    if kind == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
                         field_errors.append(f"{label} must be a valid email")
                     elif kind in {"number", "integer"}:
                         number = float(value)
