@@ -23,12 +23,24 @@ class DocumentAutomationTests(unittest.TestCase):
             self.assertEqual(count, 2)
             self.assertTrue(os.path.isfile(zip_path))
 
-    def test_rejects_missing_columns(self):
+    def test_accepts_arbitrary_csv_columns_without_customer_schema(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            source = os.path.join(temp_dir, "bad.csv")
+            source = os.path.join(temp_dir, "sales.csv")
+            output = os.path.join(temp_dir, "output")
+            with open(source, "w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["product", "quantity", "unit_price"])
+                writer.writeheader()
+                writer.writerow({"product": "Notebook", "quantity": "12", "unit_price": "4.50"})
+            zip_path, count = generate_customer_pdfs(source, output)
+            self.assertEqual(count, 1)
+            self.assertTrue(os.path.isfile(zip_path))
+
+    def test_rejects_duplicate_headers_instead_of_losing_data(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = os.path.join(temp_dir, "duplicate.csv")
             with open(source, "w", encoding="utf-8") as handle:
-                handle.write("name,email\nAlex,alex@example.test\n")
-            with self.assertRaises(ValueError):
+                handle.write("name,name\\nAlex,Sam\\n")
+            with self.assertRaisesRegex(ValueError, "duplicate column names"):
                 generate_customer_pdfs(source, temp_dir)
 
 
