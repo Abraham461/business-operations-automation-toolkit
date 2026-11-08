@@ -128,6 +128,11 @@
     const startInput = document.createElement("input"); startInput.className = "form-control form-control-sm"; startInput.type = "number"; startInput.min = "1"; startInput.placeholder = "Start row"; startInput.value = scope.start || 1;
     const endInput = document.createElement("input"); endInput.className = "form-control form-control-sm"; endInput.type = "number"; endInput.min = "1"; endInput.placeholder = "End row"; endInput.value = scope.end || 100;
     const rowsInput = document.createElement("input"); rowsInput.className = "form-control form-control-sm"; rowsInput.placeholder = "e.g. 1, 4, 8, 12"; rowsInput.value = Array.isArray(scope.rows) ? scope.rows.join(", ") : "";
+    rowsInput.setAttribute("aria-label", "Selected CSV data row numbers");
+    rowsInput.setAttribute("inputmode", "numeric");
+    if (scope.mode === "selected" && (!Array.isArray(scope.rows) || !scope.rows.length)) {
+      rowsInput.setCustomValidity("Select at least one row from the preview or enter row numbers.");
+    }
     const scopeHint = document.createElement("small"); scopeHint.textContent = "Row numbers refer to data rows; the CSV header is not counted. Rows outside this selection are excluded from downstream actions and are reported as not validated.";
     const rowPicker = document.createElement("div");
     rowPicker.className = "validation-row-picker";
@@ -226,7 +231,7 @@
           renderRowPicker();
           return;
         }
-        const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
+        const parsedRows = tokens.map(value => /^\d+$/.test(value) ? Number(value) : NaN);
         const valid = tokens.length > 0 && tokens.every(Boolean)
           && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
           && new Set(parsedRows).size === parsedRows.length;
@@ -266,7 +271,7 @@
     rowsInput.addEventListener("input", () => {
       if (scopeMode.value !== "selected") return;
       const tokens = rowsInput.value.split(",").map(value => value.trim());
-      const parsedRows = tokens.map(value => /^\\d+$/.test(value) ? Number(value) : NaN);
+      const parsedRows = tokens.map(value => /^\d+$/.test(value) ? Number(value) : NaN);
       const valid = tokens.length > 0 && tokens.every(Boolean)
         && parsedRows.every(value => Number.isSafeInteger(value) && value > 0)
         && new Set(parsedRows).size === parsedRows.length;
