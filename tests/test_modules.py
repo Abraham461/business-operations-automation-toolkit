@@ -39,7 +39,7 @@ class DocumentAutomationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             source = os.path.join(temp_dir, "duplicate.csv")
             with open(source, "w", encoding="utf-8") as handle:
-                handle.write("name,name\\nAlex,Sam\\n")
+                handle.write("name,name\nAlex,Sam\n")
             with self.assertRaisesRegex(ValueError, "duplicate column names"):
                 generate_customer_pdfs(source, temp_dir)
 
