@@ -606,7 +606,42 @@
           });
           return button;
         };
+        const dragHandle = document.createElement("button");
+        dragHandle.type = "button";
+        dragHandle.className = "workflow-node-control workflow-drag-handle";
+        dragHandle.draggable = true;
+        dragHandle.title = "Drag to reorder";
+        dragHandle.setAttribute("aria-label", "Drag to reorder " + info[0]);
+        const grip = document.createElement("i");
+        grip.className = "bi bi-grip-vertical";
+        dragHandle.append(grip);
+        dragHandle.addEventListener("dragstart", event => {
+          event.stopPropagation();
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", String(index));
+          row.classList.add("is-dragging");
+        });
+        dragHandle.addEventListener("dragend", () => {
+          document.querySelectorAll(".workflow-node-row").forEach(item => item.classList.remove("is-dragging", "is-drop-target"));
+        });
+        row.addEventListener("dragover", event => {
+          if (!document.querySelector(".workflow-node-row.is-dragging")) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          document.querySelectorAll(".workflow-node-row").forEach(item => item.classList.remove("is-drop-target"));
+          row.classList.add("is-drop-target");
+        });
+        row.addEventListener("drop", event => {
+          event.preventDefault();
+          const sourceIndex = Number(event.dataTransfer.getData("text/plain"));
+          if (!Number.isInteger(sourceIndex) || sourceIndex <= 0 || sourceIndex >= nodes.length - 1 || index <= 0 || index >= nodes.length - 1 || sourceIndex === index) return;
+          const moved = nodes.splice(sourceIndex, 1)[0];
+          nodes.splice(index, 0, moved);
+          markDirty();
+          render();
+        });
         controls.append(
+          dragHandle,
           moveButton("Move up", "bi-arrow-up", -1, index <= 1),
           moveButton("Move down", "bi-arrow-down", 1, index >= nodes.length - 2)
         );
