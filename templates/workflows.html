@@ -89,6 +89,23 @@
         </div>
         <button type="button" class="btn btn-light workflow-reset" id="reset-workflow" title="Reset to the starter workflow"><i class="bi bi-arrow-counterclockwise"></i><span>Reset</span></button>
       </div>
+      <div class="workflow-template-bar">
+        <div class="workflow-template-copy">
+          <span class="card-kicker">START FASTER</span>
+          <strong>Start from a template</strong>
+          <small>Choose a reusable process, then customize its fields and rules.</small>
+        </div>
+        <div class="workflow-template-controls">
+          <label class="visually-hidden" for="workflow-template">Workflow template</label>
+          <select id="workflow-template" class="form-select">
+            <option value="">Choose a starter template</option>
+            <option value="customer_records">Customer record processing</option>
+            <option value="invoice_intake">Invoice intake and validation</option>
+            <option value="employee_onboarding">Employee onboarding records</option>
+          </select>
+          <button type="button" class="btn btn-outline-primary" id="apply-workflow-template" disabled>Use template</button>
+        </div>
+      </div>
       <div id="workflow-library-status" class="workflow-library-status" role="status" aria-live="polite"></div>
 
       <div class="workflow-canvas-toolbar">
