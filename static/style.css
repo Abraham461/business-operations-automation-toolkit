@@ -440,3 +440,15 @@ textarea.form-control{resize:vertical;min-height:110px}
 .workflow-node-control:hover:not(:disabled){background:#edf2ff;border-color:#cbd7fb;color:#4268df}
 .workflow-node-control:disabled{opacity:.3;cursor:not-allowed}
 .workflow-studio .node-remove{margin-left:0}
+
+/* Reusable workflow starter templates */
+.workflow-template-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 15px;margin-top:12px;border:1px solid #e8edf5;border-radius:10px;background:#fbfcff}
+.workflow-template-copy{display:grid;gap:3px;min-width:180px}
+.workflow-template-copy strong{font-size:11px;font-weight:800;color:var(--ink)}
+.workflow-template-copy small{font-size:9px;line-height:1.5;color:var(--muted)}
+.workflow-template-controls{display:flex;align-items:center;gap:8px;min-width:min(100%,420px)}
+.workflow-template-controls .form-select{min-width:0;flex:1;font-size:10px;min-height:36px}
+.workflow-template-controls .btn{font-size:10px;white-space:nowrap;min-height:36px}
+.workflow-template-controls .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:650px){.workflow-template-bar{align-items:stretch;flex-direction:column;gap:10px}.workflow-template-controls{min-width:0;width:100%}}
+@media(max-width:420px){.workflow-template-controls{align-items:stretch;flex-direction:column}.workflow-template-controls .btn{width:100%}}
