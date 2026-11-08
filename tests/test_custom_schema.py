@@ -19,6 +19,7 @@ class CustomWorkflowSchemaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             source = self._csv(folder, ["product", "quantity", "unit_price"], [
                 {"product": "Notebook", "quantity": "12", "unit_price": "4.50"},
+                {"product": "", "quantity": "0", "unit_price": "2.00"},
             ])
             nodes = [
                 "manual_trigger", "read_csv",
@@ -27,11 +28,12 @@ class CustomWorkflowSchemaTests(unittest.TestCase):
                     {"name": "quantity", "type": "integer", "required": True, "min": 1},
                     {"name": "unit_price", "type": "number", "required": True, "min": 0},
                 ]},
-                "execution_report",
+                "generate_pdfs", "execution_report",
             ]
             result = run_workflow(nodes, source, folder)
             self.assertEqual(result["status"], "success")
-            self.assertIn("Validated 1 of 1", result["steps"][2]["message"])
+            self.assertIn("Validated 1 of 2", result["steps"][2]["message"])
+            self.assertEqual(result["pdf_count"], 1)
 
     def test_rejects_invalid_and_duplicate_unique_values(self):
         with tempfile.TemporaryDirectory() as folder:
