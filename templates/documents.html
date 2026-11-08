@@ -3,27 +3,45 @@
 {% block breadcrumb %}Document automation{% endblock %}
 {% block content %}
 <div class="page-intro">
-  <div><div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE 01</div><h1>Document automation</h1><p>Generate individual PDF summaries from structured customer records.</p></div>
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE 01</div><h1>Document automation</h1><p>Extract tables from PDFs into Excel, or generate customer PDF summaries from CSV.</p></div>
   <span class="page-icon icon-blue"><i class="bi bi-file-earmark-pdf"></i></span>
 </div>
-<div class="row g-4">
+<div class="row g-4 mb-4">
   <div class="col-lg-8">
     <section class="surface-card">
-      <div class="card-heading"><div><span class="card-kicker">INPUT FILE</span><h2>Upload customer data</h2><p>Choose a CSV file containing the records you want to process.</p></div><span class="step-number">01</span></div>
-      <form method="post" action="/documents/generate" enctype="multipart/form-data">
-        <label class="form-label" for="customer-file">CSV file</label>
-        <div class="upload-panel"><i class="bi bi-cloud-arrow-up upload-symbol"></i><strong>Select your CSV file</strong><span>CSV format · Use the sample file to see the expected structure</span><input id="customer-file" class="form-control upload-input" type="file" name="file" accept=".csv" required></div>
-        <div class="required-fields"><span class="required-title">REQUIRED COLUMNS</span><div class="field-chips"><code>customer_name</code><code>customer_id</code><code>email</code><code>plan</code></div></div>
-        <button class="btn btn-primary app-primary-btn" type="submit"><i class="bi bi-file-earmark-arrow-down me-2"></i>Generate PDF documents <i class="bi bi-arrow-right ms-2"></i></button>
+      <div class="card-heading"><div><span class="card-kicker">PDF TO EXCEL</span><h2>Convert a PDF automatically</h2><p>Upload a text-based PDF. OpsPilot detects tables without requiring you to define columns first.</p></div><span class="step-number">01</span></div>
+      <form method="post" action="/documents/convert" enctype="multipart/form-data">
+        <label class="form-label" for="pdf-file">PDF document</label>
+        <div class="upload-panel"><i class="bi bi-file-earmark-pdf upload-symbol"></i><strong>Select your PDF file</strong><span>PDF format · Maximum upload size 12 MB</span><input id="pdf-file" class="form-control upload-input" type="file" name="pdf_file" accept=".pdf,application/pdf" required></div>
+        <div class="bottom-strip mt-3 mb-3"><i class="bi bi-magic strip-icon"></i><div><strong>Automatic table detection</strong><p>No fixed customer fields or column configuration required. Each detected table is exported to its own Excel worksheet.</p></div></div>
+        <button class="btn btn-primary app-primary-btn" type="submit"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Extract tables and create Excel <i class="bi bi-arrow-right ms-2"></i></button>
       </form>
     </section>
   </div>
   <div class="col-lg-4">
     <aside class="info-card">
-      <span class="info-icon"><i class="bi bi-lightbulb"></i></span><h3>Quick start</h3><p>Not ready with your own data? Download the fictional sample CSV and run a test generation.</p>
-      <a class="text-link" href="/static/sample_customers.csv" download>Download sample CSV <i class="bi bi-download"></i></a>
-      <div class="info-divider"></div><div class="mini-step"><span>1</span><div><strong>Prepare</strong><small>Check the required column names.</small></div></div><div class="mini-step"><span>2</span><div><strong>Upload</strong><small>Select your CSV file.</small></div></div><div class="mini-step"><span>3</span><div><strong>Generate</strong><small>Download the ZIP of PDF files.</small></div></div>
+      <span class="info-icon"><i class="bi bi-info-circle"></i></span><h3>What works in this version?</h3>
+      <p>Best results come from PDFs with selectable text and clearly structured rows and columns.</p>
+      <div class="mini-step"><span>1</span><div><strong>Upload PDF</strong><small>No schema setup required.</small></div></div>
+      <div class="mini-step"><span>2</span><div><strong>Review preview</strong><small>Inspect detected tables and rows.</small></div></div>
+      <div class="mini-step"><span>3</span><div><strong>Download Excel</strong><small>Each table gets its own worksheet.</small></div></div>
+      <div class="info-divider"></div>
+      <p><strong>Not supported yet:</strong> scanned PDFs requiring OCR and free-form paragraph-to-spreadsheet conversion.</p>
     </aside>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-8">
+    <section class="surface-card">
+      <div class="card-heading"><div><span class="card-kicker">EXISTING FEATURE</span><h2>CSV to customer PDF</h2><p>Keep using the original sample generator with its required customer columns.</p></div><span class="step-number">02</span></div>
+      <form method="post" action="/documents/generate" enctype="multipart/form-data">
+        <label class="form-label" for="customer-file">Customer CSV file</label>
+        <input id="customer-file" class="form-control mb-3" type="file" name="file" accept=".csv" required>
+        <div class="required-fields"><span class="required-title">REQUIRED COLUMNS</span><div class="field-chips"><code>customer_name</code><code>customer_id</code><code>email</code><code>plan</code></div></div>
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-file-earmark-pdf me-2"></i>Generate customer PDFs</button>
+        <a class="text-link ms-3" href="/static/sample_customers.csv" download>Download sample CSV <i class="bi bi-download"></i></a>
+      </form>
+    </section>
   </div>
 </div>
 {% endblock %}
