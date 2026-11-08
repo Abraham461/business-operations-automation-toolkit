@@ -57,7 +57,7 @@ You can now:
 - Load saved workflows from the local SQLite database.
 - Create a new version when a saved workflow's action sequence or condition changes.
 - Review recent execution history for each saved workflow.
-- Define workflow-specific input fields, data types, required/unique rules and numeric minimum/maximum values in the Validate rows action.
+- Define workflow-specific input fields, display labels, data types, required/unique rules, default values, custom error messages and numeric minimum/maximum values in the Validate rows action.
 - Map differently named source CSV columns to any field in that workflow's configured schema.
 - Filter valid records using a configurable CSV column and operator before downstream actions.
 - Add HTTPS API calls with JSON headers/body, response extraction and variable chaining, restricted to explicitly allowlisted hosts. Optionally store the complete JSON response as a variable for the Parse JSON action.
@@ -68,7 +68,7 @@ You can now:
 - Route matching rows to PDF generation. When no rows match, PDF generation is marked **skipped** and the workflow report explains the false branch.
 - Run either a saved version or an unsaved draft.
 
-Schema validation supports text, email, number, integer, boolean and ISO date (`YYYY-MM-DD`) fields. Required and unique checks apply to each workflow's configured schema. Numeric fields can have minimum and maximum values. Invalid rows are excluded and their row numbers and validation reasons are included in the Validate rows execution step. Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only validated rows that pass any filter or condition. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
+Schema validation supports text, email, number, integer, boolean and ISO date (`YYYY-MM-DD`) fields. Required and unique checks apply to each workflow's configured schema. Default values can fill blank cells before validation, custom error messages can override field-level errors, text fields support minimum/maximum lengths, and numeric fields support minimum/maximum values. Invalid rows are excluded and their row numbers and validation reasons are included in the Validate rows execution step. Filter and condition operators: equals, does not equal, contains, greater than, less than, is empty and is not empty. Text comparisons are case-insensitive. Numeric comparisons require numeric cell values. PDF generation receives only validated rows that pass any filter or condition. If a filter returns no records, downstream PDF generation is marked **skipped** rather than failed.
 
 AI text processing reads one selected CSV column from validated records, joins non-empty values and sends at most 20,000 characters to the existing AI processor. It creates two workflow variables (default `ai_summary` and `ai_key_details`) for later HTTP actions. Configure `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env` for live processing; without a key, the existing clearly labelled demo mode runs. Do not send confidential customer data to an external AI provider.
 
