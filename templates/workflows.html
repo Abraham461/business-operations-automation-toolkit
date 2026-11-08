@@ -1,41 +1,121 @@
 {% extends "base.html" %}
-{% block title %}Workflow Builder{% endblock %}
-{% block breadcrumb %}Workflow Builder{% endblock %}
+{% block title %}Workflow Studio{% endblock %}
+{% block breadcrumb %}Workflow Studio{% endblock %}
 {% block content %}
-<div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> AUTOMATION STUDIO</div><h1>Workflow Builder</h1><p>Connect practical actions into one repeatable business process.</p></div><span class="page-icon icon-violet"><i class="bi bi-diagram-3"></i></span></div>
-<div class="workflow-layout">
+<div class="page-intro workflow-page-intro">
+  <div>
+    <div class="eyebrow"><span class="eyebrow-line"></span> OPSPILOT AUTOMATION STUDIO</div>
+    <h1>Workflow Studio</h1>
+    <p>Design, configure and run repeatable business processes in one place.</p>
+  </div>
+  <span class="page-icon icon-violet"><i class="bi bi-diagram-3"></i></span>
+</div>
+
+<div class="workflow-studio">
   <aside class="surface-card workflow-palette">
-    <div class="card-heading"><div><span class="card-kicker">ACTION LIBRARY</span><h2>Add an action</h2><p>Build your process from top to bottom.</p></div></div>
-    <div class="action-option"><span class="workflow-node-icon trigger-node"><i class="bi bi-play-circle"></i></span><div><strong>Manual trigger</strong><small>Start the workflow</small></div><button type="button" disabled>+</button></div>
-    <div class="action-option"><span class="workflow-node-icon data-node"><i class="bi bi-filetype-csv"></i></span><div><strong>Read CSV</strong><small>Load uploaded records</small></div><button type="button" data-add-node="read_csv">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon map-node"><i class="bi bi-arrow-left-right"></i></span><div><strong>Map fields</strong><small>Map source columns to workflow fields</small></div><button type="button" data-add-node="map_fields">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon filter-node"><i class="bi bi-funnel"></i></span><div><strong>Filter rows</strong><small>Keep records that match a rule</small></div><button type="button" data-add-node="filter_rows">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon validate-node"><i class="bi bi-check2-square"></i></span><div><strong>Validate rows</strong><small>Apply workflow-specific validation rules</small></div><button type="button" data-add-node="validate_rows">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon http-node"><i class="bi bi-globe"></i></span><div><strong>HTTP Request</strong><small>Call an approved HTTPS endpoint</small></div><button type="button" data-add-node="http_request">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon ai-node"><i class="bi bi-stars"></i></span><div><strong>AI text processing</strong><small>Summarize text from a CSV column</small></div><button type="button" data-add-node="ai_process">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon variables-node"><i class="bi bi-braces"></i></span><div><strong>Set Variables</strong><small>Create or update workflow variables</small></div><button type="button" data-add-node="set_variables">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon json-node"><i class="bi bi-braces-asterisk"></i></span><div><strong>Parse JSON</strong><small>Extract values from a JSON variable</small></div><button type="button" data-add-node="parse_json">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon condition-node"><i class="bi bi-signpost-split"></i></span><div><strong>Conditional branch</strong><small>Route matching CSV rows</small></div><button type="button" data-add-node="conditional_branch">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon document-node"><i class="bi bi-file-earmark-pdf"></i></span><div><strong>Generate PDFs</strong><small>Generate PDF records from valid rows</small></div><button type="button" data-add-node="generate_pdfs">+</button></div>
-    <div class="action-option"><span class="workflow-node-icon report-node"><i class="bi bi-clipboard-data"></i></span><div><strong>Execution report</strong><small>Summarize the run</small></div><button type="button" disabled>+</button></div>
-    <p class="workflow-hint"><i class="bi bi-info-circle"></i> Define input fields and validation rules in Validate rows, then map any source CSV columns to those fields. Invalid rows are excluded and reported. Filter and conditional actions can use any CSV field. Both filtering and conditions support text, numeric and empty checks. HTTP actions require an HTTPS host allowlist and can extract response values for later actions. AI processing can summarize a selected CSV text column and pass its outputs to later actions. Set Variables creates reusable text values, while Parse JSON extracts named values from an earlier API response.</p>
+    <div class="workflow-library-heading">
+      <div>
+        <span class="card-kicker">BUILDING BLOCKS</span>
+        <h2>Action library</h2>
+        <p>Add steps to your workflow. Configure each step on the canvas.</p>
+      </div>
+      <span class="workflow-library-count">12 actions</span>
+    </div>
+    <label class="workflow-search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input id="action-search" type="search" placeholder="Search actions..." autocomplete="off" aria-label="Search workflow actions">
+      <kbd>/</kbd>
+    </label>
+
+    <div class="workflow-action-group" data-action-group>
+      <div class="workflow-group-label">INPUT</div>
+      <div class="action-option"><span class="workflow-node-icon trigger-node"><i class="bi bi-play-circle"></i></span><div><strong>Manual trigger</strong><small>Start a workflow manually</small></div><span class="action-fixed">START</span></div>
+      <div class="action-option" data-action-name="read csv file upload"><span class="workflow-node-icon data-node"><i class="bi bi-filetype-csv"></i></span><div><strong>Read CSV</strong><small>Load records from an uploaded file</small></div><button type="button" data-add-node="read_csv" aria-label="Add Read CSV">+</button></div>
+    </div>
+
+    <div class="workflow-action-group" data-action-group>
+      <div class="workflow-group-label">DATA & LOGIC</div>
+      <div class="action-option" data-action-name="map fields mapping transform"><span class="workflow-node-icon map-node"><i class="bi bi-arrow-left-right"></i></span><div><strong>Map fields</strong><small>Match source columns to business fields</small></div><button type="button" data-add-node="map_fields" aria-label="Add Map fields">+</button></div>
+      <div class="action-option" data-action-name="validate rows rules required"><span class="workflow-node-icon validate-node"><i class="bi bi-check2-square"></i></span><div><strong>Validate rows</strong><small>Apply your configured validation rules</small></div><button type="button" data-add-node="validate_rows" aria-label="Add Validate rows">+</button></div>
+      <div class="action-option" data-action-name="filter rows condition"><span class="workflow-node-icon filter-node"><i class="bi bi-funnel"></i></span><div><strong>Filter rows</strong><small>Keep records that match a rule</small></div><button type="button" data-add-node="filter_rows" aria-label="Add Filter rows">+</button></div>
+      <div class="action-option" data-action-name="conditional branch route if"><span class="workflow-node-icon condition-node"><i class="bi bi-signpost-split"></i></span><div><strong>Conditional branch</strong><small>Route records using a condition</small></div><button type="button" data-add-node="conditional_branch" aria-label="Add Conditional branch">+</button></div>
+      <div class="action-option" data-action-name="set variables values"><span class="workflow-node-icon variables-node"><i class="bi bi-braces"></i></span><div><strong>Set variables</strong><small>Save reusable values for later steps</small></div><button type="button" data-add-node="set_variables" aria-label="Add Set variables">+</button></div>
+      <div class="action-option" data-action-name="parse json extract response"><span class="workflow-node-icon json-node"><i class="bi bi-braces-asterisk"></i></span><div><strong>Parse JSON</strong><small>Extract values from a JSON response</small></div><button type="button" data-add-node="parse_json" aria-label="Add Parse JSON">+</button></div>
+    </div>
+
+    <div class="workflow-action-group" data-action-group>
+      <div class="workflow-group-label">AI & INTEGRATIONS</div>
+      <div class="action-option" data-action-name="http request api integration"><span class="workflow-node-icon http-node"><i class="bi bi-globe"></i></span><div><strong>HTTP request</strong><small>Connect to an approved HTTPS API</small></div><button type="button" data-add-node="http_request" aria-label="Add HTTP request">+</button></div>
+      <div class="action-option" data-action-name="ai text processing summarize"><span class="workflow-node-icon ai-node"><i class="bi bi-stars"></i></span><div><strong>AI text processing</strong><small>Summarize text and extract key details</small></div><button type="button" data-add-node="ai_process" aria-label="Add AI text processing">+</button></div>
+    </div>
+
+    <div class="workflow-action-group" data-action-group>
+      <div class="workflow-group-label">OUTPUT</div>
+      <div class="action-option" data-action-name="generate pdf documents"><span class="workflow-node-icon document-node"><i class="bi bi-file-earmark-pdf"></i></span><div><strong>Generate PDFs</strong><small>Create documents from valid records</small></div><button type="button" data-add-node="generate_pdfs" aria-label="Add Generate PDFs">+</button></div>
+      <div class="action-option"><span class="workflow-node-icon report-node"><i class="bi bi-clipboard-data"></i></span><div><strong>Execution report</strong><small>Summarize workflow results</small></div><span class="action-fixed">END</span></div>
+    </div>
+
+    <div class="workflow-security-note"><i class="bi bi-shield-check"></i><span><strong>Secure by design</strong><small>HTTP actions use the configured HTTPS host allowlist. Never use real customer data in demos.</small></span></div>
+    <p id="action-search-empty" class="workflow-search-empty" hidden>No actions match your search.</p>
   </aside>
-  <section class="surface-card workflow-canvas">
-    <div class="workflow-canvas-head"><div><span class="card-kicker">WORKFLOW CANVAS</span><h2>Customer document pipeline</h2><p>Actions execute in the order shown.</p></div><button type="button" class="btn btn-light btn-sm" id="reset-workflow"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</button></div>
-    <div class="row g-2 align-items-end mb-3">
-      <div class="col-md-5"><label for="workflow-name" class="form-label">Workflow name</label><input id="workflow-name" class="form-control" maxlength="100" value="Customer document pipeline"></div>
-      <div class="col-md-3"><button type="button" id="save-workflow" class="btn btn-outline-primary w-100"><i class="bi bi-cloud-arrow-up me-1"></i> Save workflow</button></div>
-      <div class="col-md-2"><label for="saved-workflows" class="form-label">Saved workflows</label><select id="saved-workflows" class="form-select"><option value="">Select workflow</option></select></div>
-      <div class="col-md-2"><label for="workflow-version" class="form-label">Version</label><select id="workflow-version" class="form-select" disabled><option value="">Latest</option></select></div>
-      <div class="col-12"><div id="workflow-library-status" class="small text-muted" role="status" aria-live="polite"></div></div>
-    </div>
-    <div id="workflow-nodes" class="workflow-nodes" aria-live="polite"></div>
-    <div class="workflow-run-panel"><label for="workflow-file" class="form-label">Input CSV file</label><input id="workflow-file" class="form-control" type="file" accept=".csv" required><div class="workflow-run-actions"><span><i class="bi bi-shield-check"></i> Fictional sample data only</span><button type="button" id="run-workflow" class="btn btn-primary app-primary-btn"><i class="bi bi-play-fill me-1"></i> Run workflow</button></div><div id="workflow-result" class="workflow-result" role="status" aria-live="polite"></div></div>
-    <div class="mt-4">
-      <div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">Recent executions</h3><span class="small text-muted">Latest 20 runs for the selected workflow</span></div>
-      <div id="workflow-history" class="small text-muted">Save or load a workflow to view its execution history.</div>
-    </div>
-  </section>
+
+  <main class="workflow-main">
+    <section class="surface-card workflow-canvas">
+      <div class="workflow-studio-topbar">
+        <div class="workflow-canvas-title">
+          <span class="card-kicker">WORKFLOW DESIGNER</span>
+          <h2>Build your process</h2>
+          <p>Arrange actions in the order your business process should run.</p>
+        </div>
+        <div class="workflow-draft-state" id="workflow-draft-state"><span></span> New draft</div>
+      </div>
+
+      <div class="workflow-management">
+        <div class="workflow-name-field">
+          <label for="workflow-name" class="form-label">Workflow name</label>
+          <input id="workflow-name" class="form-control" maxlength="100" value="Customer document pipeline" placeholder="e.g. Invoice processing">
+        </div>
+        <div class="workflow-save-field">
+          <label class="form-label" aria-hidden="true">&nbsp;</label>
+          <button type="button" id="save-workflow" class="btn btn-primary app-primary-btn w-100"><i class="bi bi-cloud-check me-1"></i> Save workflow</button>
+        </div>
+        <div class="workflow-load-field">
+          <label for="saved-workflows" class="form-label">Saved workflows</label>
+          <select id="saved-workflows" class="form-select"><option value="">Select workflow</option></select>
+        </div>
+        <div class="workflow-version-field">
+          <label for="workflow-version" class="form-label">Version</label>
+          <select id="workflow-version" class="form-select" disabled><option value="">Latest</option></select>
+        </div>
+        <button type="button" class="btn btn-light workflow-reset" id="reset-workflow" title="Reset to the starter workflow"><i class="bi bi-arrow-counterclockwise"></i><span>Reset</span></button>
+      </div>
+      <div id="workflow-library-status" class="workflow-library-status" role="status" aria-live="polite"></div>
+
+      <div class="workflow-canvas-toolbar">
+        <div><strong>Workflow steps</strong><span id="workflow-step-count">6 steps</span></div>
+        <span class="workflow-order-hint"><i class="bi bi-arrow-down"></i> Runs from top to bottom</span>
+      </div>
+      <div id="workflow-nodes" class="workflow-nodes" aria-live="polite"></div>
+
+      <div class="workflow-run-panel">
+        <div class="workflow-run-heading">
+          <div><span class="card-kicker">TEST YOUR WORKFLOW</span><h3>Run a test</h3><p>Upload a sample CSV to validate the process before using it.</p></div>
+          <span class="workflow-test-badge"><i class="bi bi-flask"></i> Test mode</span>
+        </div>
+        <div class="workflow-file-row">
+          <div class="workflow-file-input"><label for="workflow-file" class="form-label">Input CSV file</label><input id="workflow-file" class="form-control" type="file" accept=".csv" required></div>
+          <button type="button" id="run-workflow" class="btn btn-primary app-primary-btn"><i class="bi bi-play-fill me-1"></i> Run test</button>
+        </div>
+        <div class="workflow-sample-note"><i class="bi bi-info-circle"></i> Use fictional or synthetic data until production security controls are implemented.</div>
+        <div id="workflow-result" class="workflow-result" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="surface-card workflow-history-card">
+      <div class="workflow-history-heading"><div><span class="card-kicker">OBSERVABILITY</span><h3>Execution history</h3><p>Review recent workflow runs and their outcomes.</p></div><span class="workflow-history-limit">Latest 20 runs</span></div>
+      <div id="workflow-history" class="workflow-history-list">Save or load a workflow to view its execution history.</div>
+    </section>
+  </main>
 </div>
 <script src="{{ url_for('static', filename='workflow.js') }}"></script>
 {% endblock %}
