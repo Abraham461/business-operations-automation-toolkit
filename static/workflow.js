@@ -3,7 +3,7 @@
     manual_trigger: ["Manual trigger", "Start the workflow", "bi-play-circle", "trigger-node"],
     read_csv: ["Read CSV", "Load uploaded records", "bi-filetype-csv", "data-node"],
     map_fields: ["Map fields", "Map source columns to your workflow fields", "bi-arrow-left-right", "map-node"],
-    validate_rows: ["Validate rows", "Check required fields", "bi-check2-square", "validate-node"],
+    validate_rows: ["Validate rows", "Configure input fields and validation rules", "bi-check2-square", "validate-node"],
     filter_rows: ["Filter rows", "Keep records that match a rule", "bi-funnel", "filter-node"],
     conditional_branch: ["Conditional branch", "Route rows by a CSV condition", "bi-signpost-split", "condition-node"],
     http_request: ["HTTP Request", "Call an approved HTTPS endpoint", "bi-globe", "http-node"],
@@ -90,7 +90,7 @@
     };
     schema.forEach((field, fieldIndex) => {
       const row = document.createElement("div");
-      row.className = "mapping-field";
+      row.className = "schema-field-row";
       const name = document.createElement("input");
       name.className = "form-control form-control-sm";
       name.value = field.name || "";
